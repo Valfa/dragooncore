@@ -225,15 +225,31 @@ alias -l dcModul.loadModul {
 
     var %list $dbsList(%db,script,configTree)
     if (%list) {
-      .noop $dbs(%framework.dbhash,$hget($1,modul.current)).setSection
+      var %section $dbs(%db,modul_config,configTree).getScriptValue
+      var %tree_db $dbs(fw_cfg_tree)
       .noop $dbsList(%list).prepareWhile
       while ($dbsList(%list).next) {
-        .noop $dbs(%framework.dbhash,tree,$dbsList(%list).getItem,$dbsList(%list).getValue).setCustomValue
+        .noop $dbs(%tree_db,%section,$dbsList(%list).getItem,$dbsList(%list).getValue).setUserValue
       }
       .noop $dbsList(%list).destroy
-      .noop $dbs(%db).destroy
+      .noop $dbs(%tree_db).destroy
     }
 
+    var %list $dbsList(%db,script,fkey)
+    if (%list) {
+      var %section $dbs(%db,modul_config,fkey).getScriptValue
+      var %fkey_db $dbs(fw_fkey)
+      .noop $dbs(%fkey_db,%section).setSection
+      .noop $dbsList(%list).prepareWhile
+      while ($dbsList(%list).next) {
+        .noop $dbs(%fkey_db,$dbsList(%list).getItem,$dbsList(%list).getValue).setUserValue
+      }
+      .noop $dbsList(%list).destroy
+      .noop $dbs(%fkey_db,__groups__,%section,%section).setUserValue
+      .noop $dbs(%fkey_db).destroy
+    }
+
+    .noop $dbs(%db).destroy
     .load -rs $qt($hget($1,modul.file))
     if ($isalias(dc. $+ $hget($1,modul.current) $+ .load)) { dc. $+ $hget($1,modul.current) $+ .load }
     .noop $dbs(%framework.dbhash,active_moduls).setSection
@@ -271,9 +287,18 @@ alias -l dcModul.unloadModul {
       .noop $dbsList(%list).destroy
     }
 
-    .noop $dbs(%framework.dbhash,$hget($1,modul.current)).setSection
-    .noop $dbs(%framework.dbhash,tree).deleteCustomSection
+    var %section $dbs(%db,modul_config,configTree).getScriptValue
+    var %tree_db $dbs(fw_cfg_tree)
+    .noop $dbs(%tree_db,%section).deleteUserSection
+    .noop $dbs(%tree_db).destroy
 
+    var %fkey_db $dbs(fw_fkey)
+    var %section $dbs(%db,modul_config,fkey).getScriptvalue
+    .noop $dbs(%fkey_db,%section).deleteUserSection
+    .noop $dbs(%fkey_db,__groups__,%section).deleteUserItem
+    .noop $dbs(%fkey_db).destroy  
+
+    .noop $dbs(%db).destroy
     if ($isalias(dc. $+ $hget($1,modul.current) $+ .unload)) { dc. $+ $hget($1,modul.current) $+ .unload }
     .unload -nrs $nopath($hget($1,modul.file))
     .noop $dbs(%framework.dbhash,active_moduls).setSection
@@ -474,18 +499,32 @@ alias -l dcModulDialog.toggleModul {
   return 1
 }
 
-
-
+/*
+* Wird durch den Config-Dialog aufgerufen, initalisiert den Dialog
+*
+* @param $1 dcConfig objekt
+*/
 alias dc.frameworkScriptModule.createPanel {
-  set %fw.modul.obj $dcModulDialog($dcConfig(%config.obj,dialog.name).get)
+  set %fw.modul.obj $dcModulDialog($dcConfig($1,dialog.name).get)
 
 }
 
+/*
+* Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
+*/
 alias dc.frameworkScriptModule.destroyPanel { 
   .noop $dcModulDialog(%fw.modul.obj).destroy
   return 1 
 }
 
+/*
+* Verwaltet Dialog-Ereignisse wie Mausklicks, Tastatureingaben, ...
+*
+* @param $1 DialogName
+* @param $2 Ereignis
+* @param $3 Betroffene ID
+* @param $4 sonstiges
+*/
 alias dc.frameworkScriptModule.events { 
   if ($2 == sclick && $3 == 2) { .noop $dcModulDialog(%fw.modul.obj).getModulInfo }
   if ($2 == dclick && $3 == 2) { .noop $dcModulDialog(%fw.modul.obj).toggleModul }

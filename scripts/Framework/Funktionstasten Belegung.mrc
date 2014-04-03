@@ -211,6 +211,9 @@ alias dcFkey {
   
   :evalKey
   return $dcFkey.evalKey($1,$2)
+  
+  :createUserList
+  return $dcFkey.createUserList($1)
 
 }
 
@@ -231,6 +234,9 @@ alias -l dcFkey.init {
     hadd %db createDB 0
   }
   hadd $1 dbhash %db
+  
+  .noop $dcFkey($1).createUserList
+
   hadd $1 fkeylist $dcFkeyList(%db)
   hadd $1 grouplist $baseListClass
   hadd $1 commandlist $baseListClass
@@ -262,6 +268,26 @@ alias -l dcFkey.destroy {
 }
 
 /*
+* Kopiert die vorgaben Liste in die User db, falls nicht vorhanden
+*
+* @param $1 $dcFkey objekt
+* @return 1
+*/
+alias -l dcFkey.createUserList {
+  if (!$dbsList($hget($1,dbhash),user,__key_assignments__)) {
+    var %list $dbsList($hget($1,dbhash),script,__key_assignments__)
+    .noop $dbsList(%list).prepareWhile
+    .noop $dbs($hget($1,dbhash),__key_assignments__).setSection
+    while ($dbsList(%list).next) {
+      .noop $dbs($hget($1,dbhash),$dbsList(%list).getItem,$dbsList(%list).getValue).setUserValue
+    }
+    .noop $dbsList(%list).destroy
+  }
+  
+  return 1
+}
+
+/*
 * Ermittelt die Befehls-Gruppen
 *
 * @param $1 dcFkey objekt
@@ -269,17 +295,21 @@ alias -l dcFkey.destroy {
 */
 alias -l dcFkey.getGroups {
   var %list $dbsList($hget($1,dbhash),script,__groups__)
-  .noop $dbsList(%list).prepareWhile
-  while ($dbsList(%list).next) {
-    .noop $baseListClass($hget($1,grouplist),$dbsList(%list).getItem $+ $chr(44) $+ script).addLastElement
+  if (%list) {
+    .noop $dbsList(%list).prepareWhile
+    while ($dbsList(%list).next) {
+      .noop $baseListClass($hget($1,grouplist),$dbsList(%list).getItem $+ $chr(44) $+ script).addLastElement
+    }
+    .noop $dbsList(%list).destroy
   }
-  .noop $dbsList(%list).destroy
   var %list $dbsList($hget($1,dbhash),user,__groups__)
-  .noop $dbsList(%list).prepareWhile
-  while ($dbsList(%list).next) {
-    .noop $baseListClass($hget($1,grouplist),$dbsList(%list).getItem $+ $chr(44) $+ user).addLastElement
+  if (%list) {
+    .noop $dbsList(%list).prepareWhile
+    while ($dbsList(%list).next) {
+      .noop $baseListClass($hget($1,grouplist),$dbsList(%list).getItem $+ $chr(44) $+ user).addLastElement
+    }
+    .noop $dbsList(%list).destroy
   }
-  .noop $dbsList(%list).destroy
   return 1
 }
 

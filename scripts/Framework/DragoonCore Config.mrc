@@ -401,6 +401,7 @@ dialog dcConf_table {
 */
 on *:dialog:dcConf:*:*: {
   if ($devent == init) {
+    unset %config.*
     dcx Mark $dname dcConf.events
     xdialog -b $dname +twy
     set %config.obj $dcConfig($dname,%config.jumpin)
