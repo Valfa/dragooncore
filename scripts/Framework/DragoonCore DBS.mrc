@@ -61,14 +61,8 @@ alias dbs {
   :getScriptSection
   return $dbs.getSection($1,script,$2)
 
-  :getCustomSection
-  return $dbs.getSection($1,$2,$3)
-
   :setUserValue
   return $dbs.setValue($1,user,$2,$3,$4)
-
-  :setCustomValue
-  return $dbs.setValue($1,$2,$3,$4,$5)
 
   :getUserValue
   return $dbs.getValue($1,user,$2,$3)
@@ -76,29 +70,17 @@ alias dbs {
   :getScriptValue
   return $dbs.getValue($1,script,$2,$3)
 
-  :getCustomValue
-  return $dbs.getValue($1,$2,$3,$4)
-
   :getUserItem
   return $dbs.getItem($1,user,$2,$3)
 
   :getScriptItem
   return $dbs.getItem($1,script,$2,$3)
 
-  :getCustomItem
-  return $dbs.getItem($1,$2,$3,$4)
-
   :deleteUserItem
   return $dbs.deleteItem($1,user,$2,$3)
 
-  :deleteCustomItem
-  return $dbs.deleteItem($1,$2,$3,$4)
-
   :deleteUserSection
   return $dbs.deleteSection($1,user,$2)
-
-  :deleteCustomSection
-  return $dbs.deleteSection($1,$2,$3)
 }
 
 /*
@@ -107,17 +89,16 @@ alias dbs {
 * @param $1 md5hash
 * @param $2 zu Initialisierende DB
 * @param $3 Netzwerk (optional)
-* @param $4 Force $null, r oder c
+* @param $4 Force $null, r (read) oder c (create)
 * @return md5hash
 */
 alias -l dbs.init {
-  var %i 1
-  var %max $ini(dcdb/script/Framework/DragoonCore DBS.ini,$2,0)
-  while (%i <= %max) {
-    var %item $ini(dcdb/script/Framework/DragoonCore DBS.ini,$2,%i)
-    hadd -m $1 config_ $+ %item $readini(dcdb/script/Framework/DragoonCore DBS.ini,n,$2,%item)
-    inc %i
-  }
+  var %path.user dcdb/user/
+  var %path.script dcdb/script/
+  var %path.db $readini(dcdb/script/Framework/Framework.ini,n,dbs,$2) 
+  hadd -m $1 config_user %path.user $+ %path.db
+  hadd -m $1 config_script %path.script $+ %path.db
+ 
   if ($3 != $null) {
     var %file $replacex($hget($1,config_user),.ini,. $+ $3 $+ .ini)
     if ($exists(%file)) {
