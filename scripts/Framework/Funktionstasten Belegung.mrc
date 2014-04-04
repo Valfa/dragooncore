@@ -599,10 +599,10 @@ alias -l dcfkeyDialog.fillGroupCommands {
   .noop $dcFkey($hget($1,fkey.obj),$xdid($hget($1,dialog.name),3).seltext).getGroupCommands
   var %list $dcFkey($hget($1,fkey.obj),commandlist).get
   .noop $baseListClass(%list).prepareWhile
-  while ($baseListclass(%list).next) {
+  while ($baseListClass(%list).next) {
     xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $baseListClass(%list).getValue
     if ($baseListClass(%list).getValue == $xdid($hget($1,dialog.name),2,3).seltext) {
-      xdid -c %config.dialog 4 $baseListClass(%list).getPos
+      xdid -c $hget($1,dialog.name) 4 $baseListClass(%list).getPos
     }
   }
 }
@@ -614,7 +614,7 @@ alias -l dcfkeyDialog.fillGroupCommands {
 * @return 1
 */
 alias -l dcFKeyDialog.sclickFKeyList {
-  var %matchtext $xdid(%config.dialog,2,2).seltext
+  var %matchtext $xdid($hget($1,dialog.name),2,2).seltext
   if (%matchtext === DISABLED) {
     .noop $dcDialog($1,3-6,10-11).disableControls
     .noop $dcDialog($1,3-4,10-11).uncheckControls
@@ -746,10 +746,12 @@ alias -l dcFkeyDialog.delKey {
 }
 
 /*
-* Zu erledigende Aufgaben wenn das Panel erstellt wird
+* Wird durch den Config-Dialog aufgerufen, initalisiert den Dialog
+*
+* @param $1 dcConfig objekt
 */
 alias dc.frameworkFkey.createPanel {
-  set %fkey.dialog.obj $dcfkeyDialog($dcConfig(%config.obj,dialog.name).get,$dcConfig(%config.obj,currentPanel.dbhash).get)
+  set %fkey.dialog.obj $dcfkeyDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
 }
 
 /*
