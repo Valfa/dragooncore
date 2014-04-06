@@ -206,13 +206,13 @@ alias baseListClass {
 
   :destroy
   return $baseClass.destroy($1)
-  
+
   :clear
   return $baseListClass.clear($1)
-  
+
   :addLastElement
   return $baseListClass.addLastElement($1,$2-)
-  
+
 }
 
 /*
@@ -546,13 +546,53 @@ alias serverData {
   var %x $baseClass(%this,%base).init
   return $serverData.init(%x,$1)
 
-  :newServer
-  return $serverData.newServer($1)
+  :destroy
+  return $serverData.destroy($1)
+
+  :saveServer
+  return $serverData.saveServer($1)
 
   :delServer
   return $serverData.delServer($1)
+
+  :seperatePorts
+  return $serverData.seperatePorts($1,$2)
+
+  :combinePorts
+  return $serverData.combinePorts($1,$2,$3)
+
+  :set
+  return 0
+
+  :setAddress
+  return $serverData.setAddress($1,$2)
+
+  :setDesc
+  return $serverData.setDesc($1,$2)
+
+  :setPorts
+  return $serverData.setPorts($1,$2-)
+
+  :setSSL-Ports
+  return $serverData.setSSL-Ports($1,$2-)
+
+  :setPass
+  return $serverData.setPass($1,$2)
+
+  :setGroup
+  return $serverData.setGroup($1,$2)
+
+  :getErrorObject
+  return $hget($1,error.obj)
 }
 
+/*
+* Initialisiert ein serverData objekt
+*
+* @param $1 serverData objekt
+* @param $2 netzwerk (optional)
+* @return serverdata objekt
+*/
 alias -l serverData.init {
   if ($2 != $null && $server($2) != $null) {
     hadd $1 address $2
@@ -560,30 +600,100 @@ alias -l serverData.init {
     hadd $1 group $server($2).group
     hadd $1 pass $server($2).pass
 
-    var %allports $server($2).port
-    var %ports $null
-    var %ssl-ports $null
-    var %i 1
-    while (%i <= $numtok(%allports,44)) {
-      var %tmp $gettok(%allports,%i,44)
-      if ($left(%tmp,1) == $chr(43)) {
-        var %ssl-ports $addtok(%ssl-ports,%tmp,44)
-      }
-      else {
-        var %ports $addtok(%ports,%tmp,44)
-      }
-      inc %i
-    }
-    hadd $1 ports %ports
-    hadd $1 ssl-ports $replace(%ssl-ports,$chr(43),)
+    .noop $serverData($1,$server($2).port).seperatePorts
     hadd $1 exists 1
+    hadd $1 mode edit
   }
   else {
+    hadd $1 address $null
+    hadd $1 desc $null
+    hadd $1 group $null
+    hadd $1 pass $null
+    hadd $1 ports $null
+    hadd $1 ssl-ports $null
     hadd $1 exists 0
+    hadd $1 mode new
   }
+  hadd $1 error.obj $dcError
   return $1
 }
 
+/*
+* Zerstört ein serverData objekt
+*
+* @param $1 serverData objekt
+* @return 1
+*/
+alias -l serverData.destroy {
+  .noop $dcError($hget($1,error.obj)).destroy
+  .noop $baseClass($1).destroy
+  return 1
+}
+
+/*
+* Trennt einen String mit Ports nach ssl und non-ssl
+*
+* @param $1 serverData objekt
+* @param $2 port string
+* @return 1
+*/
+alias -l serverData.seperatePorts {
+  var %ports $null
+  var %ssl-ports $null
+  var %i 1
+  while (%i <= $numtok($2,44)) {
+    var %tmp $gettok($2,%i,44)
+    if ($left(%tmp,1) == $chr(43)) {
+      var %ssl-ports $addtok(%ssl-ports,%tmp,44)
+    }
+    else {
+      var %ports $addtok(%ports,%tmp,44)
+    }
+    inc %i
+  }
+  hadd $1 ports %ports
+  hadd $1 ssl-ports $replace(%ssl-ports,$chr(43),)
+  return 1
+}
+
+/*
+* Verbindet einen ssl und non-ssl Port String mirc tauglich
+*
+* @param $1 serverData objekt
+* @param $2 ports
+* @param $3 ssl-ports
+* @return port String
+*/
+alias -l serverData.combinePorts {
+  var %ports $2
+  if ($3 != $null) {
+    var %i 1
+    var %ssl-ports $null
+    while (%i <= $numtok($3,44)) {
+      var %tmp $gettok($3,%i,44)
+      if ($chr(45) isin %tmp) {
+        var %port $chr(43) $+ $gettok(%tmp,1,45) $+ $chr(45) $+ $chr(43) $+ $gettok(%tmp,2,45)
+      }
+      else {
+        var %port $chr(43) $+ %tmp
+      }
+      if (%i > 1) {
+        var %ssl-ports %ssl-ports $+ $chr(44)
+      }
+      var %ssl-ports %ssl-ports $+ %port
+      inc %i
+    }
+    var %ports %ports $+ $chr(44) $+ %ssl-ports
+  }
+  return %ports
+}
+
+/*
+* Löscht den aktuellen Server
+*
+* @param $1 serverData objekt
+* @return 1 oder 0
+*/
 alias -l serverData.delServer {
   if ($hget($1,address) != $null && $hget($1,exists) == 1) {
     .server -r $hget($1,address)
@@ -595,38 +705,162 @@ alias -l serverData.delServer {
   }
 }
 
-alias -l serverData.newServer {
-  if ($hget($1,group) == $null || $hget($1,desc) == $null || $hget($1,address) == $null || $hget($1,ports) == $null) {
-    return 0
+/*
+* Setzt die Server-Gruppe/Netzwerk
+*
+* @param $1 serverData objekt
+* @param $2 gruppe
+* @return 1
+*/
+alias -l serverData.setGroup {
+  if ($2 == $null) {
+    .noop $dcError($hget($1,error.obj),ServerGruppe darf nicht leer sein).add
+  }
+  elseif ($2 == none) {
+    .noop $dcError($hget($1,error.obj),ServerGruppe darf nicht $qt(none) lauten).add
+  }
+  elseif ($regex(regex,$2,[[:space:]])) {
+    .noop $dcError($hget($1,error.obj),Server Gruppe enthält unzulässige Leerzeichen).add
+  }
+  hadd $1 group.save $2
+  return 1
+}
+
+/*
+* Setzt das Passwort
+*
+* @param $1 serverData objekt
+* @param $2 passwort
+* @return 1
+*/
+alias -l serverData.setPass {
+  if ($2 == none) {
+    .noop $dcError($hget($1,error.obj),Passwort darf nicht $qt(none) lauten).add
+  }
+  elseif ($regex(regex,$2,^[[:space:]]|[[:space:]]$) == 1) {
+    .noop $dcError($hget($1,error.obj),Passwort ungültig).add
+  }
+  hadd $1 pass.save $2
+  return 1
+}
+
+/*
+* Setzt die Ports
+*
+* @param $1 serverData objekt
+* @param $2 ports
+* @return 1
+*/
+alias -l serverData.setPorts {
+  if ($2 != $null && $regex(regex,$2,(^[1-9][0-9]{3,4})((,|-)?([1-9][0-9]{3,4}))*$) == 0) {
+    .noop $dcError($hget($1,error.obj),Port Angabe ungültig).add
+  }
+  hadd $1 ports.save $2
+  return 1
+}
+
+/*
+* Setzt die SSL-Ports
+*
+* @param $1 serverData objekt
+* @param $2 ssl-ports
+* @return 1
+*/
+alias -l serverData.setSSL-Ports {
+  if ($2 != $null && $regex(regex,$2,(^[1-9][0-9]{3,4})((,|-)?([1-9][0-9]{3,4}))*$) == 0) {
+    .noop $dcError($hget($1,error.obj),SSL-Port Angabe ungültig).add
+  }
+  hadd $1 ssl-ports.save $2
+  return 1
+}
+
+/*
+* Setzt die Server-Addresse
+*
+* @param $1 serverData objekt
+* @param $2 addresse
+* @return 1
+*/
+alias -l serverData.setAddress {
+  if ($2 == $null) {
+    .noop $dcError($hget($1,error.obj),Server Addresse darf nicht leer sein).add
+  }
+  elseif ($regex(regex,$2,^localhost$|^([a-z]+\.)*[a-z0-9]([a-z]|[0-9]|[-_\.~])*\.[a-z][a-z]+|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})) == 0) {
+    .noop $dcError($hget($1,error.obj),Server Addresse ungültig).add
   }
   else {
-    var %ports $hget($1,ports)
-    if ($hget($1,ssl-ports) != $null) {
-      var %i 1
-      var %ssl-ports $null
-      while (%i <= $numtok($hget($1,ssl-ports),44)) {
-        var %tmp $gettok($hget($1,ssl-ports),%i,44)
-        if ($chr(45) isin %tmp) {
-          var %port $chr(43) $+ $gettok(%tmp,1,45) $+ $chr(45) $+ $chr(43) $+ $gettok(%tmp,2,45)
-        }
-        else {
-          var %port $chr(43) $+ %tmp
-        }
-        if (%i > 1) {
-          var %ssl-ports %ssl-ports $+ $chr(44)
-        }
-        var %ssl-ports %ssl-ports $+ %port
-        inc %i
-      }
-      var %ports %ports $+ $chr(44) $+ %ssl-ports
+    var %server $serverData($2)
+    if (($serverData(%server,exists).get == 1 && ($hget($1,mode) == new) || ($hget($1,mode) == edit && $2 != $hget($1,address)))) {
+      .noop $dcError($hget($1,error.obj),Server Addresse darf nur einmal existieren).add
     }
-    if ($hget($1,pass) == $null) {
-      hadd $1 pass none
-    }
-    server -a $hget($1,address) -p %ports -g $hget($1,group) -w $hget($1,pass) -d $hget($1,desc)
-    return 1
-
+    .noop $serverData(%server).destroy
   }
+  hadd $1 address.save $2
+  return 1
+}
+
+/*
+* Setzt die Server Beschreibung
+*
+* @param $1 serverData objekt
+* @param $2 Beschreibung
+* @return 1
+*/
+alias -l serverData.setDesc {
+  if ($hget($1,group.save) == $null) {
+    .noop $dcError($hget($1,error.obj),ServerGruppe/Netzwerk muss vorher gesetzt werden).add
+  }
+  elseif ($2 == $null) {
+    .noop $dcError($hget($1,error.obj),Server Beschreibung darf nicht leer sein).add
+  }
+  elseif ($regex(regex,$2,^[[:space:]]|[[:space:]]$) == 1) { 
+    .noop $dcError($hget($1,error.obj),Server Beschreibung enthält unzulässige Leerzeichen).add
+  }
+  elseif ($2 == none) {
+    .noop $dcError($hget($1,error.obj),Server Beschreibung darf nicht $qt(none) lauten).add
+  }
+  hadd $1 desc.save $2
+  return 1
+}
+
+/*
+* Speichert einen Server
+*
+* @param $1 serverData objekt
+* @return 1 oder 0
+*/
+alias -l serverData.saveServer {
+    if ($hget($1,address) != $hget($1,address.save) && $hget($1,desc) != $hget($1,desc.save) && $hget($1,mode) == edit) {
+      .noop $dcError($hget($1,error.obj),Es darf nur die Server-Addresse oder die Beschreibung geändert werden nicht beides).add
+    }
+    var %list $serverList($hget($1,group.save))
+    .noop $serverList(%list).prepareWhile
+    while ($serverList(%list).next) {
+      var %data $serverData($serverList(%list).getValue)
+      if ($hget($1,desc.save) == $serverData(%data,desc).get) {
+        if ($hget($1,mode) == new || ($hget($1,mode) == edit && $severList(%list).getValue != $hget($1,address.save))) { 
+          .noop $dcError($hget($1,error.obj),Server Beschreibung muss einzigartig sein).add
+        }        
+      }
+      .noop $serverData(%data).destroy
+    }
+    .noop $serverList(%list).destroy
+    if ($hget($1,ports.save) == $null && $hget($1,ssl-ports.save) == $null) {
+      .noop $dcError($hget($1,error.obj),Es muss zumindest ein normaler oder ein SSL-Port angegeben sein).add
+    }
+    if ($dcError($hget($1,error.obj)).count > 0) {
+      return 0
+    }
+    else {
+      var %ports $serverData($1,$hget($1,ports.save),$hget($1,ssl-ports.save)).combinePorts
+
+      if ($hget($1,pass.save) == $null) {
+        hadd $1 pass.save none
+      }
+      server -a $hget($1,address.save) -p %ports -g $hget($1,group.save) -w $hget($1,pass.save) -d $hget($1,desc.save)    
+    }
+  
+  return 1
 }
 
 /*
@@ -805,31 +1039,31 @@ alias dcDialog {
 
   :destroy
   return $baseClass.destroy($1)
-  
+
   :panelCenter
   return $dcDialog.panelCenter($1,$2,$3)
-  
+
   :createBasePanel
   return $dcDialog.createBasePanel($1,$2,$3)
-  
+
   :createHeader
   return $dcDialog.createHeader($1,$2,$3,$4,$5-)
-  
+
   :addControl
   return $dcDialog.addControl($1,$2,$3,$4,$5-)
-  
+
   :enableControls
   return $dcDialog.multiControl($1,-e,$2-)
-  
+
   :disableControls
   return $dcDialog.multiControl($1,-b,$2-)
-  
+
   :checkControls
   return $dcDialog.multiControl($1,-c,$2-)
-  
+
   :uncheckControls
   return $dcDialog.multiControl($1,-u,$2-)
-  
+
   :clearControls
   return $dcDialog.multiControl($1,-r,$2-)
 }
