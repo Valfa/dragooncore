@@ -51,6 +51,9 @@ alias dbs {
   :init
   var %x $baseClass(%this,%base).init
   return $dbs.init(%x,$1,$2,$3)
+  
+  :set
+  return 0
 
   :setSection
   return $dbs.setSection($1,$2)
@@ -117,6 +120,7 @@ alias -l dbs.init {
   }
   hadd $1 section $null
   hadd $1 database $2
+  hadd $1 limit_get config_user,config_script
   return $1
 }
 
