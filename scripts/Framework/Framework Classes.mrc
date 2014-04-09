@@ -193,13 +193,16 @@ alias baseListClass {
   return $baseListClass.setPos($1,$2)
 
   :getPos
-  return $baseClass.get($1,pos)
+  return $hget($1,pos)
 
   :getItem
-  return $baseClass.get($1,current_item)
+  return $hget($1,current_item)
 
   :getValue
-  return $baseClass.get($1,current_value)
+  return $hget($1,current_value)
+  
+  :count
+  return $hget($1,last)
 
   :exists
   return $hget($1,exists)

@@ -67,6 +67,9 @@ alias dcFkeyList {
 
   :command_line
   return $hget($1,command_line)
+  
+  :destroy
+  return $dcFkeyList.destroy($1)
 }
 
 /*
@@ -81,8 +84,21 @@ alias -l dcFkeyList.init {
   hadd $1 last 36
   hadd $1 list $dbsList($2,user,__key_assignments__)
   hadd $1 dbhash $2
+  hadd $1 getdata 1
   .noop $dcFkeyList.getData($1)
   return $1
+}
+
+/*
+* Löscht ein dcFkeyList objekt
+*
+* @param $1 dcFkeyList objekt
+* @return 1
+*/
+alias -l dcFkeyList.destroy {
+  .noop $dbsList($hget($1,list)).destroy
+  .noop $baseClass($1).destroy
+  return 1
 }
 
 /*
