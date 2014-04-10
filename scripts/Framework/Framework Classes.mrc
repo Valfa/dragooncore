@@ -12,8 +12,8 @@
 * @author Valfa
 * @version 1.0
 */
-alias baseClass {
-  var %this = baseClass      | ; Name of Object (Alias name)
+alias dcBase {
+  var %this = dcBase      | ; Name of Object (Alias name)
   var %base = $null              | ; Name of BaseClass, $null for none
 
   /*
@@ -48,29 +48,29 @@ alias baseClass {
   */
 
   :init
-  return $baseClass.init($1,$2)
+  return $dcBase.init($1,$2)
 
   :get
-  return $baseClass.get($1,$2)
+  return $dcBase.get($1,$2)
 
   :set
-  return $baseClass.set($1,$2,$3)
+  return $dcBase.set($1,$2,$3)
 
   :exists
   return $hget($1,exists)
 
   :destroy
-  return $baseClass.destroy($1)
+  return $dcBase.destroy($1)
 }
 
 /*
-* Initialisiert ein Objekt auf Basis der baseClass
+* Initialisiert ein Objekt auf Basis der dcBase
 *
 * @param $1 Klasse
-* @param $2 %this
-* @return Hash des Objekts
+* @param $2 BasisKlasse
+* @return dcBase Objekt
 */
-alias -l baseClass.init {
+alias -l dcBase.init {
   inc %oop
   var %hash $md5($ctime $+ $ticks $+ %oop)
   hmake %hash 100
@@ -80,7 +80,13 @@ alias -l baseClass.init {
   return %hash
 }
 
-alias -l baseClass.destroy {
+/*
+* Initialisiert ein Objekt auf Basis der dcBase
+*
+* @param $1 dcBase objekt
+* @return 1
+*/
+alias -l dcBase.destroy {
   hfree $1
   dec %oop
   return 1
@@ -89,39 +95,31 @@ alias -l baseClass.destroy {
 /*
 * Liest einen Wert aus
 *
-* @param $1 Objekthash
+* @param $1 dcBase objekt
 * @param $2 item
-* @return Wert des Items
+* @return Wert des Items oder $null
 */
-alias -l baseClass.get {
-  if (($hget($1,limit_vars) != $null && $2 isin $hget($1,limit_vars)) || ($hget($1,limit_get) != $null && $2 isin $hget($1,limit_get))) {
-    return $hget($1,$2)  
-  }
-  elseif ($hget($1,limit_vars) == $null) {
+alias -l dcBase.get {
+  if ($2 != $null && ($istok($hget($1,limit_vars),$2,44) || $istok($hget($1,limit_get),$2,44))) {
     return $hget($1,$2)
   }
   else {
     return $null
   }
-
 }
 
 /*
 * Setzt einen Wert
 *
-* @param $1 Objekthash
+* @param $1 dcBase objekt
 * @param $2 item
 * @param $3 Wert
 * @return 1 oder 0
 */
-alias -l baseClass.set {
-  if (($hget($1,limit_vars) != $null && $2 isin $hget($1,limit_vars)) || ($hget($1,limit_set) != $null && $2 isin $hget($1,limit_set))) {
-    hadd $1 $2 $3
-    return 1
-  }
-  elseif ($hget($1,limit_vars) == $null) {
-    hadd $1 $2 $3
-    return 1
+alias -l dcBase.set {
+  if ($2 != $null && ($istok($hget($1,limit_vars),$2,44) || $istok($hget($1,limit_get),$2,44))) {
+   hadd $1 $2 $3
+   return 1
   }
   else {
     return 0
@@ -129,14 +127,14 @@ alias -l baseClass.set {
 }
 
 /*
-* BaseListClass
+* dcList
 * Provides most Functionality for List Classes
 *
 * @author Valfa
 * @version 1.0
 */
-alias baseListClass {
-  var %this = baseListClass      | ; Name of Object (Alias name)
+alias dcList {
+  var %this = dcList      | ; Name of Object (Alias name)
   var %base = $null              | ; Name of BaseClass, $null for none
 
   /*
@@ -171,26 +169,26 @@ alias baseListClass {
   */
 
   :init
-  var %x $baseClass($1,$2).init
-  return $baseListClass.init(%x)
+  var %x $dcBase($1,$2).init
+  return $dcList.init(%x)
 
   :prepareWhile
-  return $baseListClass.prepareWhile($1,$2)
+  return $dcList.prepareWhile($1,$2)
 
   :next
-  return $baseListClass.next($1)
+  return $dcList.next($1)
 
   :prev
-  return $baseListClass.prev($1)
+  return $dcList.prev($1)
 
   :first
-  return $baseListClass.first($1)
+  return $dcList.first($1)
 
   :last
-  return $baseListClass.last($1)
+  return $dcList.last($1)
 
   :setPos
-  return $baseListClass.setPos($1,$2)
+  return $dcList.setPos($1,$2)
 
   :getPos
   return $hget($1,pos)
@@ -200,7 +198,7 @@ alias baseListClass {
 
   :getValue
   return $hget($1,current_value)
-  
+
   :count
   return $hget($1,last)
 
@@ -208,23 +206,23 @@ alias baseListClass {
   return $hget($1,exists)
 
   :destroy
-  return $baseClass.destroy($1)
+  return $dcBase.destroy($1)
 
   :clear
-  return $baseListClass.clear($1)
+  return $dcList.clear($1)
 
   :addLastElement
-  return $baseListClass.addLastElement($1,$2-)
+  return $dcList.addLastElement($1,$2-)
 
 }
 
 /*
-* Initialisiert ein BaseListClass objekt
+* Initialisiert ein dcList objekt
 *
-* @param $1 baseListClass objekt
-* @return baseListClass objekt
+* @param $1 dcList objekt
+* @return dcList objekt
 */
-alias -l baseListClass.init {
+alias -l dcList.init {
   hadd $1 pos 0
   hadd $1 last 0
   return $1
@@ -233,11 +231,11 @@ alias -l baseListClass.init {
 /*
 * Setzt die Position entsprechend der Nutzung von While Schleifen
 *
-* @param $1 ListKlassen Hash
+* @param $1 dcList objekt
 * @param $2 0 --> oder 1 <--
 * @return 1 oder 0
 */
-alias -l baseListClass.prepareWhile {
+alias -l dcList.prepareWhile {
   if ($2 == 0 || $2 == $null) { 
     hadd $1 pos 0 
     return 1
@@ -254,10 +252,10 @@ alias -l baseListClass.prepareWhile {
 /*
 * Liest Daten an der aktuellen ZeigerPosition aus
 *
-* @param $1 dbsList md5hash
+* @param $1 dcList objekt
 * @return 1
 */
-alias -l baseListClass.getData {
+alias -l dcList.getData {
   var %tmp $hget($1,INIT) $+ .getData
   if ($isalias(%tmp)) {
     .noop $ [ $+ [ %tmp ] $+ ($1) ]
@@ -273,16 +271,16 @@ alias -l baseListClass.getData {
 /*
 * setzt den PositionsZeiger auf das nächste Element
 *
-* @param $1 ListKlassen md5hash
+* @param $1 dcList objekt
 * @return 1 oder 0
 */
-alias -l baseListClass.next {
+alias -l dcList.next {
   hinc $1 pos
   if ($hget($1,pos) > $hget($1,last)) {
     return 0
   }
   else {
-    .noop $baseListClass.getData($1)
+    .noop $dcList.getData($1)
     return 1
   }
 }
@@ -290,16 +288,16 @@ alias -l baseListClass.next {
 /*
 * setzt den PositionsZeiger auf das vorherige Element
 *
-* @param $1 ListKlassen md5hash
+* @param $1 dcList objekt
 * @return 1 oder 0
 */
-alias -l baseListClass.prev {
+alias -l dcList.prev {
   hdec $1 pos
   if ($hget($1,pos) < 1) {
     return 0
   }
   else {
-    .noop $baseListClass.getData($1)
+    .noop $dcList.getData($1)
     return 1
   }
 }
@@ -307,38 +305,38 @@ alias -l baseListClass.prev {
 /*
 * setzt den PositionsZeiger auf das erste Element
 *
-* @param $1 ListKlassen md5hash
+* @param $1 dcList objekt
 * @return 1
 */
-alias -l baseListClass.first {
+alias -l dcList.first {
   hadd $1 pos 1
-  .noop $baseListClass.getData($1)
+  .noop $dcList.getData($1)
   return 1
 }
 
 /*
 * setzt den PositionsZeiger auf das letzte Element
 *
-* @param $1 ListKlassen md5hash
+* @param $1 dcList objekt
 * @return 1
 */
-alias -l baseListClass.last {
+alias -l dcList.last {
   hadd $1 pos $hget($1,last)
-  .noop $baseListClass.getData($1)
+  .noop $dcList.getData($1)
   return 1
 }
 
 /*
 * setzt den PositionsZeiger auf ein bestimmtes
 *
-* @param $1 ListKlassen md5hash
+* @param $1 dcList objekt
 * @param $2 Position
 * @return 1 oder 0
 */
-alias -l baseListClass.setPos {
+alias -l dcList.setPos {
   if ($2 >= 1 && $2 <= $hget($1,last)) {
     hadd $1 pos $2
-    .noop $baseListClass.getData($1)
+    .noop $dcList.getData($1)
     return 1
   }
   else {
@@ -349,11 +347,11 @@ alias -l baseListClass.setPos {
 /*
 * Fügt ein Element am Ende der Liste ein
 *
-* @param $1 baseListClass objekt
+* @param $1 dcList objekt
 * @param $2- Wert
 * @return 1 oder 0
 */
-alias -l baseListClass.addLastElement {
+alias -l dcList.addLastElement {
   if ($2 != $null) {
     hadd $1 n $+ $calc($hget($1,last) + 1) $2-
     hinc $1 last
@@ -367,10 +365,10 @@ alias -l baseListClass.addLastElement {
 /*
 * Löscht alle Elemente
 *
-* @param $1 baseListClass objekt
+* @param $1 dcList objekt
 * @return 1
 */
-alias -l baseListClass.clear {
+alias -l dcList.clear {
   hdel -w $1 n*
   hadd $1 last 0
   hadd $1 pos 0
@@ -379,11 +377,11 @@ alias -l baseListClass.clear {
 
 /*
 * Class Alias
-* var %var $networkList
+* var %var $dcNetworkList
 */
-alias networkList {
-  var %this = networkList            | ; Name of Object (Alias name)
-  var %base = baseListClass        | ; Name of BaseClass, $null for none  
+alias dcNetworkList {
+  var %this = dcNetworkList            | ; Name of Object (Alias name)
+  var %base = dcList        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -415,8 +413,8 @@ alias networkList {
   */
 
   :init
-  var %x $baseListClass(%this,%base).init
-  return $networkList.init(%x)
+  var %x $dcList(%this,%base).init
+  return $dcNetworkList.init(%x)
 }
 
 /*
@@ -425,7 +423,7 @@ alias networkList {
 * @param $1 md5hash
 * @return md5hash
 */
-alias -l networkList.init {
+alias -l dcNetworkList.init {
   var %i 1
   var %j 1
   var %max $server(0)
@@ -438,19 +436,19 @@ alias -l networkList.init {
   }
   hadd $1 pos 1
   hadd $1 last $calc(%j - 1)
-  .noop $baseListClass.getData($1)
+  .noop $dcList.getData($1)
   return $1
 }
 
 /*
 * Class Alias
-* var %var $serverList
+* var %var $dcServerList
 *
 * @param $1 Netzwerk
 */
-alias serverList {
-  var %this = serverList           | ; Name of Object (Alias name)
-  var %base = BaseListClass        | ; Name of BaseClass, $null for none  
+alias dcServerList {
+  var %this = dcServerList           | ; Name of Object (Alias name)
+  var %base = dcList        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -482,8 +480,8 @@ alias serverList {
   */
 
   :init
-  var %x $baseListClass(%this,%base).init
-  return $serverList.INIT(%x,$1)
+  var %x $dcList(%this,%base).init
+  return $dcServerList.init(%x,$1)
 }
 
 /*
@@ -493,7 +491,7 @@ alias serverList {
 * @param $2 netzwerk
 * @return md5hash
 */
-alias -l serverList.INIT {
+alias -l dcServerList.init {
   var %i 1
   var %max $server(0,$2)
   while (%i <= %max) {
@@ -502,7 +500,7 @@ alias -l serverList.INIT {
   }
   hadd $1 pos 1
   hadd $1 last $calc(%i - 1)
-  .noop $baseListClass.getData($1)
+  .noop $dcList.getData($1)
   return $1
 }
 
@@ -512,9 +510,9 @@ alias -l serverList.INIT {
 *
 * @param $1 server
 */
-alias serverData {
-  var %this = serverData            | ; Name of Object (Alias name)
-  var %base = baseClass        | ; Name of BaseClass, $null for none  
+alias dcServer {
+  var %this = dcServer            | ; Name of Object (Alias name)
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -546,64 +544,61 @@ alias serverData {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
-  return $serverData.init(%x,$1)
+  var %x $dcBase(%this,%base).init
+  return $dcServer.init(%x,$1)
 
   :destroy
-  return $serverData.destroy($1)
+  return $dcServer.destroy($1)
 
   :saveServer
-  return $serverData.saveServer($1)
+  return $dcServer.saveServer($1)
 
   :delServer
-  return $serverData.delServer($1)
+  return $dcServer.delServer($1)
 
   :seperatePorts
-  return $serverData.seperatePorts($1,$2)
+  return $dcServer.seperatePorts($1,$2)
 
   :combinePorts
-  return $serverData.combinePorts($1,$2,$3)
-
-  :set
-  return 0
+  return $dcServer.combinePorts($1,$2,$3)
 
   :setAddress
-  return $serverData.setAddress($1,$2)
+  return $dcServer.setAddress($1,$2)
 
   :setDesc
-  return $serverData.setDesc($1,$2)
+  return $dcServer.setDesc($1,$2)
 
   :setPorts
-  return $serverData.setPorts($1,$2-)
+  return $dcServer.setPorts($1,$2-)
 
   :setSSL-Ports
-  return $serverData.setSSL-Ports($1,$2-)
+  return $dcServer.setSSL-Ports($1,$2-)
 
   :setPass
-  return $serverData.setPass($1,$2)
+  return $dcServer.setPass($1,$2)
 
   :setGroup
-  return $serverData.setGroup($1,$2)
+  return $dcServer.setGroup($1,$2)
 
   :getErrorObject
   return $hget($1,error.obj)
 }
 
 /*
-* Initialisiert ein serverData objekt
+* Initialisiert ein dcServer objekt
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 netzwerk (optional)
-* @return serverdata objekt
+* @return dcServer objekt
 */
-alias -l serverData.init {
+alias -l dcServer.init {
   if ($2 != $null && $server($2) != $null) {
     hadd $1 address $2
     hadd $1 desc $server($2).desc
     hadd $1 group $server($2).group
     hadd $1 pass $server($2).pass
 
-    .noop $serverData($1,$server($2).port).seperatePorts
+    .noop $dcServer($1,$server($2).port).seperatePorts
     hadd $1 exists 1
     hadd $1 mode edit
   }
@@ -622,25 +617,25 @@ alias -l serverData.init {
 }
 
 /*
-* Zerstört ein serverData objekt
+* Zerstört ein dcServer objekt
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @return 1
 */
-alias -l serverData.destroy {
+alias -l dcServer.destroy {
   .noop $dcError($hget($1,error.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
 /*
 * Trennt einen String mit Ports nach ssl und non-ssl
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 port string
 * @return 1
 */
-alias -l serverData.seperatePorts {
+alias -l dcServer.seperatePorts {
   var %ports $null
   var %ssl-ports $null
   var %i 1
@@ -662,12 +657,12 @@ alias -l serverData.seperatePorts {
 /*
 * Verbindet einen ssl und non-ssl Port String mirc tauglich
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 ports
 * @param $3 ssl-ports
 * @return port String
 */
-alias -l serverData.combinePorts {
+alias -l dcServer.combinePorts {
   var %ports $2
   if ($3 != $null) {
     var %i 1
@@ -694,10 +689,10 @@ alias -l serverData.combinePorts {
 /*
 * Löscht den aktuellen Server
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @return 1 oder 0
 */
-alias -l serverData.delServer {
+alias -l dcServer.delServer {
   if ($hget($1,address) != $null && $hget($1,exists) == 1) {
     .server -r $hget($1,address)
     hadd $1 exists 0
@@ -711,11 +706,11 @@ alias -l serverData.delServer {
 /*
 * Setzt die Server-Gruppe/Netzwerk
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 gruppe
 * @return 1
 */
-alias -l serverData.setGroup {
+alias -l dcServer.setGroup {
   if ($2 == $null) {
     .noop $dcError($hget($1,error.obj),ServerGruppe darf nicht leer sein).add
   }
@@ -732,11 +727,11 @@ alias -l serverData.setGroup {
 /*
 * Setzt das Passwort
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 passwort
 * @return 1
 */
-alias -l serverData.setPass {
+alias -l dcServer.setPass {
   if ($2 == none) {
     .noop $dcError($hget($1,error.obj),Passwort darf nicht $qt(none) lauten).add
   }
@@ -750,11 +745,11 @@ alias -l serverData.setPass {
 /*
 * Setzt die Ports
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 ports
 * @return 1
 */
-alias -l serverData.setPorts {
+alias -l dcServer.setPorts {
   if ($2 != $null && $regex(regex,$2,(^[1-9][0-9]{3,4})((,|-)?([1-9][0-9]{3,4}))*$) == 0) {
     .noop $dcError($hget($1,error.obj),Port Angabe ungültig).add
   }
@@ -765,11 +760,11 @@ alias -l serverData.setPorts {
 /*
 * Setzt die SSL-Ports
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 ssl-ports
 * @return 1
 */
-alias -l serverData.setSSL-Ports {
+alias -l dcServer.setSSL-Ports {
   if ($2 != $null && $regex(regex,$2,(^[1-9][0-9]{3,4})((,|-)?([1-9][0-9]{3,4}))*$) == 0) {
     .noop $dcError($hget($1,error.obj),SSL-Port Angabe ungültig).add
   }
@@ -780,11 +775,11 @@ alias -l serverData.setSSL-Ports {
 /*
 * Setzt die Server-Addresse
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 addresse
 * @return 1
 */
-alias -l serverData.setAddress {
+alias -l dcServer.setAddress {
   if ($2 == $null) {
     .noop $dcError($hget($1,error.obj),Server Addresse darf nicht leer sein).add
   }
@@ -792,11 +787,11 @@ alias -l serverData.setAddress {
     .noop $dcError($hget($1,error.obj),Server Addresse ungültig).add
   }
   else {
-    var %server $serverData($2)
-    if (($serverData(%server,exists).get == 1 && ($hget($1,mode) == new) || ($hget($1,mode) == edit && $2 != $hget($1,address)))) {
+    var %server $dcServer($2)
+    if (($dcServer(%server,exists).get == 1 && ($hget($1,mode) == new) || ($hget($1,mode) == edit && $2 != $hget($1,address)))) {
       .noop $dcError($hget($1,error.obj),Server Addresse darf nur einmal existieren).add
     }
-    .noop $serverData(%server).destroy
+    .noop $dcServer(%server).destroy
   }
   hadd $1 address.save $2
   return 1
@@ -805,11 +800,11 @@ alias -l serverData.setAddress {
 /*
 * Setzt die Server Beschreibung
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @param $2 Beschreibung
 * @return 1
 */
-alias -l serverData.setDesc {
+alias -l dcServer.setDesc {
   if ($hget($1,group.save) == $null) {
     .noop $dcError($hget($1,error.obj),ServerGruppe/Netzwerk muss vorher gesetzt werden).add
   }
@@ -829,40 +824,40 @@ alias -l serverData.setDesc {
 /*
 * Speichert einen Server
 *
-* @param $1 serverData objekt
+* @param $1 dcServer objekt
 * @return 1 oder 0
 */
-alias -l serverData.saveServer {
-    if ($hget($1,address) != $hget($1,address.save) && $hget($1,desc) != $hget($1,desc.save) && $hget($1,mode) == edit) {
-      .noop $dcError($hget($1,error.obj),Es darf nur die Server-Addresse oder die Beschreibung geändert werden nicht beides).add
+alias -l dcServer.saveServer {
+  if ($hget($1,address) != $hget($1,address.save) && $hget($1,desc) != $hget($1,desc.save) && $hget($1,mode) == edit) {
+    .noop $dcError($hget($1,error.obj),Es darf nur die Server-Addresse oder die Beschreibung geändert werden nicht beides).add
+  }
+  var %list $dcServerList($hget($1,group.save))
+  .noop $dcServerList(%list).prepareWhile
+  while ($dcServerList(%list).next) {
+    var %data $dcServer($dcServerList(%list).getValue)
+    if ($hget($1,desc.save) == $dcServer(%data,desc).get) {
+      if ($hget($1,mode) == new || ($hget($1,mode) == edit && $severList(%list).getValue != $hget($1,address.save))) { 
+        .noop $dcError($hget($1,error.obj),Server Beschreibung muss einzigartig sein).add
+      }        
     }
-    var %list $serverList($hget($1,group.save))
-    .noop $serverList(%list).prepareWhile
-    while ($serverList(%list).next) {
-      var %data $serverData($serverList(%list).getValue)
-      if ($hget($1,desc.save) == $serverData(%data,desc).get) {
-        if ($hget($1,mode) == new || ($hget($1,mode) == edit && $severList(%list).getValue != $hget($1,address.save))) { 
-          .noop $dcError($hget($1,error.obj),Server Beschreibung muss einzigartig sein).add
-        }        
-      }
-      .noop $serverData(%data).destroy
-    }
-    .noop $serverList(%list).destroy
-    if ($hget($1,ports.save) == $null && $hget($1,ssl-ports.save) == $null) {
-      .noop $dcError($hget($1,error.obj),Es muss zumindest ein normaler oder ein SSL-Port angegeben sein).add
-    }
-    if ($dcError($hget($1,error.obj)).count > 0) {
-      return 0
-    }
-    else {
-      var %ports $serverData($1,$hget($1,ports.save),$hget($1,ssl-ports.save)).combinePorts
+    .noop $dcServer(%data).destroy
+  }
+  .noop $dcServerList(%list).destroy
+  if ($hget($1,ports.save) == $null && $hget($1,ssl-ports.save) == $null) {
+    .noop $dcError($hget($1,error.obj),Es muss zumindest ein normaler oder ein SSL-Port angegeben sein).add
+  }
+  if ($dcError($hget($1,error.obj)).count > 0) {
+    return 0
+  }
+  else {
+    var %ports $dcServer($1,$hget($1,ports.save),$hget($1,ssl-ports.save)).combinePorts
 
-      if ($hget($1,pass.save) == $null) {
-        hadd $1 pass.save none
-      }
-      server -a $hget($1,address.save) -p %ports -g $hget($1,group.save) -w $hget($1,pass.save) -d $hget($1,desc.save)    
+    if ($hget($1,pass.save) == $null) {
+      hadd $1 pass.save none
     }
-  
+    server -a $hget($1,address.save) -p %ports -g $hget($1,group.save) -w $hget($1,pass.save) -d $hget($1,desc.save)    
+  }
+
   return 1
 }
 
@@ -872,7 +867,7 @@ alias -l serverData.saveServer {
 */
 alias dcError {
   var %this = dcError            | ; Name of Object (Alias name)
-  var %base = baseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -904,7 +899,7 @@ alias dcError {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcError.init(%x)
 
   :add
@@ -992,8 +987,8 @@ alias -l dcError.showDialog {
 }
 
 /*
-* BaseClass
-* Just some default functions that can be directly called by other objects
+* dcDialog
+* Just some default functions for Dialogs
 *
 * @author Valfa
 * @version 1.0
@@ -1034,14 +1029,14 @@ alias dcDialog {
   */
 
   :init
-  var %x $baseClass.init($1,$2).init
+  var %x $dcBase.init($1,$2).init
   return $dcDialog.init(%x)
 
   :exists
   return $hget($1,exists)
 
   :destroy
-  return $baseClass.destroy($1)
+  return $dcBase.destroy($1)
 
   :panelCenter
   return $dcDialog.panelCenter($1,$2,$3)
@@ -1077,12 +1072,12 @@ alias dcDialog {
 * @return dc dialog objekt
 */
 alias -l dcDialog.init {
-  if (%framework.dbhash == $null) { set %framework.dbhash $dbs(framework) }
-  .noop $dbs(%framework.dbhash,config_dialog).setSection
-  hadd $1 basePanelID $dbs(%framework.dbhash,basePanelID).getScriptValue
-  hadd $1 panelWidth $dbs(%framework.dbhash,panelWidth).getScriptValue
-  hadd $1 panelHeight $dbs(%framework.dbhash,panelHeight).getScriptValue
-  .noop $dbs(%framework.dbhash).setSection
+  if (%dc.fw.dbhash == $null) { set %dc.fw.dbhash $dbs(framework) }
+  .noop $dbs(%dc.fw.dbhash,config_dialog).setSection
+  hadd $1 basePanelID $dbs(%dc.fw.dbhash,basePanelID).getScriptValue
+  hadd $1 panelWidth $dbs(%dc.fw.dbhash,panelWidth).getScriptValue
+  hadd $1 panelHeight $dbs(%dc.fw.dbhash,panelHeight).getScriptValue
+  .noop $dbs(%dc.fw.dbhash).setSection
   return $1
 }
 

@@ -15,7 +15,7 @@
 */
 alias dcAutoIdent {
   var %this = dcAutoIdent           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -47,7 +47,7 @@ alias dcAutoIdent {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcAutoIdent.init(%x,$1)
 
   :destroy
@@ -74,12 +74,12 @@ alias dcAutoIdent {
 * Erzeugt ein AutoIdentify-Objekt
 *
 * @param $1 dcAutoIdent objekt
-* @param $2 dbs hash (optional)
+* @param $2 dcdbs hash (optional)
 * @return dcAutoIdent objekt
 */
 alias -l dcAutoIdent.init {
   if ($2 == $null || $hget($2,database) != modul_auto_identify) { 
-    var %db $dbs(modul_auto_identify)
+    var %db $dcdbs(modul_auto_identify)
     hadd %db createDB 1
   }
   else {
@@ -87,11 +87,11 @@ alias -l dcAutoIdent.init {
     hadd %db createDB 0
   }
   hadd $1 dbhash %db
-  .noop $dbs(%db,config).setSection
-  var %pwd $dbs(%db,pwd).getUserValue
-  var %connect $dbs(%db,connect).getUserValue
-  if (%pwd == $null) { var %pwd $dbs(%db,pwd).getScriptValue }
-  if (%connect == $null) { var %connect $dbs(%db,connect).getScriptValue }
+  .noop $dcdbs(%db,config).setSection
+  var %pwd $dcdbs(%db,pwd).getUserValue
+  var %connect $dcdbs(%db,connect).getUserValue
+  if (%pwd == $null) { var %pwd $dcdbs(%db,pwd).getScriptValue }
+  if (%connect == $null) { var %connect $dcdbs(%db,connect).getScriptValue }
   hadd $1 config.pwd $decryptValue(%pwd)
   hadd $1 config.connect %connect
   hadd $1 error.obj $dcError
@@ -108,10 +108,10 @@ alias -l dcAutoIdent.init {
 */
 alias -l dcAutoIdent.destroy {
   if ($hget($1,createDB) == 1) {
-    .noop $dbs($hget($1,dbhash)).destroy
+    .noop $dcdbs($hget($1,dbhash)).destroy
   }
   .noop $dcError($hget($1,error.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -125,10 +125,10 @@ alias -l dcAutoIdent.destroy {
 */
 alias -l dcAutoIdent.writeConfig {
   if ($dcAutoIdent($1,$2,$3).checkConfig) {    
-    .noop $dbs($hget($1,dbhash),config).setSection
-    if ($2 != $null) { .noop $dbs($hget($1,dbhash),pwd,$encryptValue($2)).setUserValue | hadd $1 config.pwd $2 }
-    else { .noop $dbs($hget($1,dbhash),pwd).deleteUserItem | hdel $1 config.pwd }
-    .noop $dbs($hget($1,dbhash),connect,$3).setUserValue | hadd $1 config.connect $3
+    .noop $dcdbs($hget($1,dbhash),config).setSection
+    if ($2 != $null) { .noop $dcdbs($hget($1,dbhash),pwd,$encryptValue($2)).setUserValue | hadd $1 config.pwd $2 }
+    else { .noop $dcdbs($hget($1,dbhash),pwd).deleteUserItem | hdel $1 config.pwd }
+    .noop $dcdbs($hget($1,dbhash),connect,$3).setUserValue | hadd $1 config.connect $3
 
     return 1
   }
@@ -441,16 +441,18 @@ alias -l dcAutoidentDialog.saveNickGroup {
 
 /*
 * Wird durch den Config-Dialog aufgerufen, initalisiert den Dialog
+*
+* @param $1 dcConfig objekt
 */
 alias dc.autoIdentify.createPanel { 
-  set %autoIdentDialog.obj $dcAutoIdentDialog($dcConfig(%config.obj,currentPanel.dbhash).get,$dcConfig(%config.obj,dialog.name).get)
+  set %dc.autoIdent.dialog.obj $dcAutoIdentDialog($dcConfig($1,currentPanel.dbhash).get,$dcConfig($1,dialog.name).get)
 }
 
 /*
 * Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
 */
 alias dc.autoIdentify.destroyPanel { 
-  .noop $dcAutoidentDialog(%autoIdentDialog.obj).destroy
+  .noop $dcAutoidentDialog(%dc.autoIdent.dialog.obj).destroy
 }
 
 /*
@@ -464,8 +466,8 @@ alias dc.autoIdentify.destroyPanel {
 alias dc.autoIdentify.events { 
   if ($2 == sclick) {
     if ($3 == 75) {
-      if ($4 == 1) { .noop $dcAutoidentDialog(%autoIdentDialog.obj).addNickGroup }
+      if ($4 == 1) { .noop $dcAutoidentDialog(%dc.autoIdent.dialog.obj).addNickGroup }
     }
-    if ($3 == 80) { .noop $dcAutoIdentDialog(%autoIdentDialog.obj).saveConfig }
+    if ($3 == 80) { .noop $dcAutoIdentDialog(%dc.autoIdent.dialog.obj).saveConfig }
   }
 }

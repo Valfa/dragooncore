@@ -15,7 +15,7 @@
 */
 alias dcConnect {
   var %this = dcConnect           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -48,7 +48,7 @@ alias dcConnect {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcConnect.init(%x,$1)
 
   :destroy
@@ -97,7 +97,7 @@ alias dcConnect {
 */
 alias -l dcConnect.init {
   if ($2 == $null || $hget($2,database) != modul_connect) { 
-    var %db $dbs(modul_connect)
+    var %db $dcDbs(modul_connect)
     hadd %db createDB 1
   }
   else {
@@ -131,15 +131,15 @@ alias -l dcConnect.init {
 alias -l dcConnect.destroy {
   .noop $dcError($hget($1,error.obj)).destroy
   if ($hget($1,createDB) == 1) {
-    .noop $dbs($hget($1,dbhash)).destroy
+    .noop $dcDbs($hget($1,dbhash)).destroy
   }
   if ($hget($1,perform) != 0) {
-    .noop $dbsList($hget($1,perform)).destroy
+    .noop $dcDbsList($hget($1,perform)).destroy
   }
   if ($hget($1,dbhash.local) != 0) {
-    .noop $dbs($hget($1,dbhash.local)).destroy
+    .noop $dcDbs($hget($1,dbhash.local)).destroy
   }
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -152,15 +152,15 @@ alias -l dcConnect.destroy {
 */
 alias -l dcConnect.setNetwork {
   if ($hget($1,perform) != 0) {
-    .noop $dbsList($hget($1,perform)).destroy
+    .noop $dcDbsList($hget($1,perform)).destroy
     hadd $1 perform 0
   }
   if ($hget($1,dbhash.local) != 0) {
-    .noop $dbs($hget($1,dbhash.local)).destroy
+    .noop $dcDbs($hget($1,dbhash.local)).destroy
     hadd $1 dbhash.local 0
   }
   hadd $1 network $2
-  hadd $1 dbhash.local $dbs(modul_connect,$2,r)
+  hadd $1 dbhash.local $dcDbs(modul_connect,$2,r)
   hadd $1 ident.local.nick $null
   hadd $1 ident.local.anick $null
   hadd $1 ident.local.emailaddr $null
@@ -176,31 +176,31 @@ alias -l dcConnect.setNetwork {
 * @return 1
 */
 alias -l dcConnect.getDefaultIdent {
-  .noop $dbs($hget($1,dbhash),ident).setSection
+  .noop $dcDbs($hget($1,dbhash),ident).setSection
 
-  if ($dbs($hget($1,dbhash),nick).getUserValue != $null) {
-    hadd $1 ident.default.nick $dbs($hget($1,dbhash),nick).getUserValue
+  if ($dcDbs($hget($1,dbhash),nick).getUserValue != $null) {
+    hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getUserValue
   }
   else {
-    hadd $1 ident.default.nick $dbs($hget($1,dbhash),nick).getScriptValue
+    hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getScriptValue
   }
-  if ($dbs($hget($1,dbhash),anick).getUserValue != $null) {
-    hadd $1 ident.default.anick $dbs($hget($1,dbhash),anick).getUserValue
-  }
-  else {
-    hadd $1 ident.default.anick $dbs($hget($1,dbhash),anick).getScriptValue
-  }
-  if ($dbs($hget($1,dbhash),fullname).getUserValue != $null) {
-    hadd $1 ident.default.fullname $dbs($hget($1,dbhash),fullname).getUserValue
+  if ($dcDbs($hget($1,dbhash),anick).getUserValue != $null) {
+    hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getUserValue
   }
   else {
-    hadd $1 ident.default.fullname $dbs($hget($1,dbhash),fullname).getScriptValue
+    hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getScriptValue
   }
-  if ($dbs($hget($1,dbhash),emailaddr).getUserValue != $null) {
-    hadd $1 ident.default.emailaddr $dbs($hget($1,dbhash),emailaddr).getUserValue
+  if ($dcDbs($hget($1,dbhash),fullname).getUserValue != $null) {
+    hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getUserValue
   }
   else {
-    hadd $1 ident.default.emailaddr $dbs($hget($1,dbhash),emailaddr).getScriptValue
+    hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getScriptValue
+  }
+  if ($dcDbs($hget($1,dbhash),emailaddr).getUserValue != $null) {
+    hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getUserValue
+  }
+  else {
+    hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getScriptValue
   }
   return 1
 }
@@ -213,11 +213,11 @@ alias -l dcConnect.getDefaultIdent {
 */
 alias -l dcConnect.getNetworkIdent {
   if ($hget($1,dbhash.local)) {
-    .noop $dbs($hget($1,dbhash.local),ident).setSection
-    hadd $1 ident.local.nick $dbs($hget($1,dbhash.local),nick).getUserValue
-    hadd $1 ident.local.anick $dbs($hget($1,dbhash.local),anick).getUserValue
-    hadd $1 ident.local.emailaddr $dbs($hget($1,dbhash.local),emailaddr).getUserValue
-    hadd $1 ident.local.fullname $dbs($hget($1,dbhash.local),fullname).getUserValue
+    .noop $dcDbs($hget($1,dbhash.local),ident).setSection
+    hadd $1 ident.local.nick $dcDbs($hget($1,dbhash.local),nick).getUserValue
+    hadd $1 ident.local.anick $dcDbs($hget($1,dbhash.local),anick).getUserValue
+    hadd $1 ident.local.emailaddr $dcDbs($hget($1,dbhash.local),emailaddr).getUserValue
+    hadd $1 ident.local.fullname $dcDbs($hget($1,dbhash.local),fullname).getUserValue
   }
   return 1
 }
@@ -266,7 +266,7 @@ alias -l dcConnect.getIdent {
 */
 alias -l dcConnect.getNetworkData {
   .noop $dcConnect($1).getNetworkIdent
-  hadd $1 perform $dbsList($hget($1,dbhash.local),user,perform)
+  hadd $1 perform $dcDbsList($hget($1,dbhash.local),user,perform)
   return 1
 }
 
@@ -279,18 +279,18 @@ alias -l dcConnect.getNetworkData {
 alias -l dcConnect.delNetwork {
   .noop $dcError($hget($1,error.obj)).clear
   if ($hget($1,network) != $null) {
-    var %list $serverList($hget($1,network))
-    .noop $serverList(%list).prepareWhile
-    while ($serverList(%list).next) {
-      var %server $serverData($serverList(%list).getValue)
-      if ($serverData(%server).delServer == 0) {
-        .noop $dcError($hget($1,error.obj),$serverData(%server,address).get konnte nicht gelöscht werden).add
-        .noop $serverData(%server).destroy
+    var %list $dcServerList($hget($1,network))
+    .noop $dcServerList(%list).prepareWhile
+    while ($dcServerList(%list).next) {
+      var %server $dcServer($dcServerList(%list).getValue)
+      if ($dcServer(%server).delServer == 0) {
+        .noop $dcError($hget($1,error.obj),$dcServer(%server,address).get konnte nicht gelöscht werden).add
+        .noop $dcServer(%server).destroy
         break
       }
-      .noop $serverData(%server).destroy
+      .noop $dcServer(%server).destroy
     }
-    .noop $serverList(%list).destroy
+    .noop $dcServerList(%list).destroy
     if ($dcError($hget($1,error.obj)).count > 0) {
       return 0
     }
@@ -358,12 +358,12 @@ alias -l dcConnect.saveIdent {
   if ($dcConnect($1,$3,$4,$5,$6).checkIdent) {
     if ($2 == 1) { var %db $hget($1,dbhash) | var %pre ident.default. }
     else { var %db $hget($1,dbhash.local) | var %pre ident.local. }
-    .noop $dbs(%db,ident).setSection
-    .noop $dbs(%db).deleteUserSection
-    if ($3 != $null) { .noop $dbs(%db,nick,$3).setUserValue | hadd $1 %pre $+ nick $3 }
-    if ($4 != $null) { .noop $dbs(%db,anick,$4).setUserValue | hadd $1 %pre $+ anick $4 }
-    if ($5 != $null) { .noop $dbs(%db,emailaddr,$5).setUserValue | hadd $1 %pre $+ emailaddr $5 }
-    if ($6 != $null) { .noop $dbs(%db,fullname,$6).setUserValue | hadd $1 %pre $+ fullname $6 }
+    .noop $dcDbs(%db,ident).setSection
+    .noop $dcDbs(%db).deleteUserSection
+    if ($3 != $null) { .noop $dcDbs(%db,nick,$3).setUserValue | hadd $1 %pre $+ nick $3 }
+    if ($4 != $null) { .noop $dcDbs(%db,anick,$4).setUserValue | hadd $1 %pre $+ anick $4 }
+    if ($5 != $null) { .noop $dcDbs(%db,emailaddr,$5).setUserValue | hadd $1 %pre $+ emailaddr $5 }
+    if ($6 != $null) { .noop $dcDbs(%db,fullname,$6).setUserValue | hadd $1 %pre $+ fullname $6 }
     return 1
   }
   else {
@@ -383,8 +383,8 @@ alias -l dcConnect.prepareNewPerform {
     .noop $dcError($hget($1,error.obj),Netzwerk wurde nicht gesetzt).add
     return 0
   } 
-  .noop $dbs($hget($1,dbhash.local),perform).setSection
-  .noop $dbs($hget($1,dbhash.local)).deleteUserSection
+  .noop $dcDbs($hget($1,dbhash.local),perform).setSection
+  .noop $dcDbs($hget($1,dbhash.local)).deleteUserSection
   hadd $1 perform.line 0
   return 1
 }
@@ -401,13 +401,13 @@ alias -l dcConnect.addPerformLine {
     .noop $dcError($hget($1,error.obj),Perform Zeile enthält unzulässige Leerzeichen).add
   }
   if ($dcError($hget($1,error.obj)).count > 0) {
-    .noop $dbs($hget($1,dbhash.local)).deleteUserSection
+    .noop $dcDbs($hget($1,dbhash.local)).deleteUserSection
     return 0
   }
   else {
     if ($2 != $null) {
       hinc $1 perform.line
-      .noop $dbs($hget($1,dbhash.local),n $+ $hget($1,perform.line),$2).setUserValue
+      .noop $dcDbs($hget($1,dbhash.local),n $+ $hget($1,perform.line),$2).setUserValue
     }
     return 1
   }  
@@ -542,7 +542,7 @@ alias -l dcConnectDialog.init {
 */
 alias -l dcConnectDialog.destroy {
   .noop $dcConnect($hget($1,connect.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -702,14 +702,14 @@ alias -l dcConnectDialog.createServerControls {
 */
 alias -l dcConnectDialog.loadServers {
   if ($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).num == 0) {
-    var %serverList $serverList($xdid($hget($1,dialog.name),2).seltext)
-    .noop $serverList(%serverList).prepareWhile
-    while ($serverList(%serverList).next) {
-      var %serverData $serverData($serverList(%serverList).getValue)
-      xdid -a $hget($1,dialog.name) 2 $+($xdid($hget($1,dialog.name),2).selpath $serverList(%serverList).getPos,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) $serverData(%serverData,desc).get,$chr(9),$serverList(%serverList).getValue)
-      .noop $serverData(%serverData).destroy
+    var %serverList $dcServerList($xdid($hget($1,dialog.name),2).seltext)
+    .noop $dcServerList(%serverList).prepareWhile
+    while ($dcServerList(%serverList).next) {
+      var %serverData $dcServer($dcServerList(%serverList).getValue)
+      xdid -a $hget($1,dialog.name) 2 $+($xdid($hget($1,dialog.name),2).selpath $dcServerList(%serverList).getPos,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) $dcServer(%serverData,desc).get,$chr(9),$dcServerList(%serverList).getValue)
+      .noop $dcServer(%serverData).destroy
     }
-    .noop $serverList(%serverList).destroy
+    .noop $dcServerList(%serverList).destroy
     if ($2 == 1) {
       xdid -t $hget($1,dialog.name) 2 +e $xdid($hget($1,dialog.name),2).selpath
     }
@@ -724,13 +724,13 @@ alias -l dcConnectDialog.loadServers {
 * @return 1
 */
 alias -l dcConnectDialog.fillNetworkList {
-  var %networkList $networkList
-  .noop $networkList(%networkList).prepareWhile
-  while ($networkList(%networkList).next) {
-    xdid -a $hget($1,dialog.name) 2 $+($networkList(%networkList).getPos,$chr(9),+ 1 1 0 0 0 $rgb(0,0,255) $rgb(255,0,255) $networkList(%networkList).getValue,$chr(9),$networkList(%networkList).getValue)
+  var %networkList $dcNetworkList
+  .noop $dcNetworkList(%networkList).prepareWhile
+  while ($dcNetworkList(%networkList).next) {
+    xdid -a $hget($1,dialog.name) 2 $+($dcNetworkList(%networkList).getPos,$chr(9),+ 1 1 0 0 0 $rgb(0,0,255) $rgb(255,0,255) $dcNetworkList(%networkList).getValue,$chr(9),$dcNetworkList(%networkList).getValue)
 
   }
-  .noop $networkList(%networkList).destroy
+  .noop $dcNetworkList(%networkList).destroy
   xdid -c $hget($1,dialog.name) 2 1
   return 1
 }
@@ -760,9 +760,9 @@ alias -l dcConnectDialog.setNetworkControls {
 
   var %list $dcConnect($hget($1,connect.obj),perform).get
   if (%list) {
-    .noop $dbsList(%list).prepareWhile
-    while ($dbsList(%list).next) {
-      xdid -i $hget($1,dialog.name) 15 $dbsList(%list).getPos $dbsList(%list).getValue
+    .noop $dcDbsList(%list).prepareWhile
+    while ($dcDbsList(%list).next) {
+      xdid -i $hget($1,dialog.name) 15 $dcDbsList(%list).getPos $dcDbsList(%list).getValue
     }
   }
   return 1
@@ -775,14 +775,14 @@ alias -l dcConnectDialog.setNetworkControls {
 * @return 1
 */
 alias -l dcConnectDialog.setServerControls {
-  set %connect.sl.serverhash $serverData($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).tooltip)
-  xdid -ra $hget($1,dialog.name) 4 $serverData(%connect.sl.serverhash,desc).get
-  xdid -ra $hget($1,dialog.name) 5 $serverData(%connect.sl.serverhash,address).get
-  xdid -ra $hget($1,dialog.name) 6 $serverData(%connect.sl.serverhash,ports).get
-  xdid -ra $hget($1,dialog.name) 7 $serverData(%connect.sl.serverhash,ssl-ports).get
-  xdid -ra $hget($1,dialog.name) 8 $serverData(%connect.sl.serverhash,pass).get
-  .noop $serverData(%connect.sl.serverhash).destroy
-  unset %connect.sl.serverhash
+  set %dc.connect.sl.serverhash $dcServer($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).tooltip)
+  xdid -ra $hget($1,dialog.name) 4 $dcServer(%dc.connect.sl.serverhash,desc).get
+  xdid -ra $hget($1,dialog.name) 5 $dcServer(%dc.connect.sl.serverhash,address).get
+  xdid -ra $hget($1,dialog.name) 6 $dcServer(%dc.connect.sl.serverhash,ports).get
+  xdid -ra $hget($1,dialog.name) 7 $dcServer(%dc.connect.sl.serverhash,ssl-ports).get
+  xdid -ra $hget($1,dialog.name) 8 $dcServer(%dc.connect.sl.serverhash,pass).get
+  .noop $dcServer(%dc.connect.sl.serverhash).destroy
+  unset %dc.connect.sl.serverhash
   return 1
 }
 
@@ -882,8 +882,8 @@ alias -l dcConnectDialog.editServer {
 * @return 1
 */
 alias -l dcConnectDialog.delServer {
-  var %serverData $serverData($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).tooltip)
-  if ($serverData(%serverData).delServer) {
+  var %serverData $dcServer($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).tooltip)
+  if ($dcServer(%serverData).delServer) {
     var %sel $xdid($hget($1,dialog.name),2).selpath
     xdid -d $hget($1,dialog.name) 2 %sel
     var %sel.root $gettok(%sel,1,32)
@@ -898,7 +898,7 @@ alias -l dcConnectDialog.delServer {
   else {
     .noop $dcx(MsgBox,ok error modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) Fehler $chr(9) Server löschen fehlgeschlagen )
   }
-  .noop $serverData(%serverData).destroy
+  .noop $dcServer(%serverData).destroy
   return 1
 }
 
@@ -943,17 +943,17 @@ alias -l dcConnectDialog.saveNetworkData {
 * @return 1
 */
 alias -l dcConnectDialog.saveServerData {
-  if ($hget($1,server.mode) == new) { var %server $serverData }
-  else { var %server $serverData($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).tooltip) }
+  if ($hget($1,server.mode) == new) { var %server $dcServer }
+  else { var %server $dcServer($xdid($hget($1,dialog.name),2,$xdid($hget($1,dialog.name),2).selpath).tooltip) }
   var %path $gettok($xdid($hget($1,dialog.name),2).selpath,1,32)
-  .noop $serverData(%server,$xdid($hget($1,dialog.name),2,%path).text).setGroup
-  .noop $serverData(%server,$xdid($hget($1,dialog.name),4).text).setDesc
-  .noop $serverData(%server,$xdid($hget($1,dialog.name),5).text).setAddress
-  .noop $serverData(%server,$xdid($hget($1,dialog.name),6).text).setPorts
-  .noop $serverData(%server,$xdid($hget($1,dialog.name),7).text).setSSL-Ports
-  .noop $serverData(%server,$xdid($hget($1,dialog.name),8).text).setPass
+  .noop $dcServer(%server,$xdid($hget($1,dialog.name),2,%path).text).setGroup
+  .noop $dcServer(%server,$xdid($hget($1,dialog.name),4).text).setDesc
+  .noop $dcServer(%server,$xdid($hget($1,dialog.name),5).text).setAddress
+  .noop $dcServer(%server,$xdid($hget($1,dialog.name),6).text).setPorts
+  .noop $dcServer(%server,$xdid($hget($1,dialog.name),7).text).setSSL-Ports
+  .noop $dcServer(%server,$xdid($hget($1,dialog.name),8).text).setPass
 
-  if ($serverData(%server).saveServer) {
+  if ($dcServer(%server).saveServer) {
     if ($hget($1,server.mode) == edit) {
       xdid -o $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).selpath $chr(9) $xdid($hget($1,dialog.name),5).text
       xdid -v $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).selpath $chr(9) $xdid($hget($1,dialog.name),4).text
@@ -970,9 +970,9 @@ alias -l dcConnectDialog.saveServerData {
     hadd $1 server.mode edit
   }
   else {
-    .noop $dcError($serverData(%server).getErrorObject,$dialog($hget($1,dialog.name)).hwnd).showDialog
+    .noop $dcError($dcServer(%server).getErrorObject,$dialog($hget($1,dialog.name)).hwnd).showDialog
   }
-  .noop $serverData(%server).destroy
+  .noop $dcServer(%server).destroy
   return 1
 }
 
@@ -1036,15 +1036,15 @@ alias -l dcConnectDialog.selectTreeviewItem {
 * @param $1 dcConfig objekt
 */
 alias dc.connectServerlist.createPanel { 
-  set %connect.dialog.obj $dcConnectDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
+  set %dc.connect.dialog.obj $dcConnectDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
 }
 
 /*
 * Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
 */
 alias dc.connectServerlist.destroyPanel {
-  .noop $dcConnectDialog(%connect.dialog.obj).destroy
-  unset %connect.*
+  .noop $dcConnectDialog(%dc.connect.dialog.obj).destroy
+  unset %dc.connect.*
 }
 
 /*
@@ -1056,28 +1056,28 @@ alias dc.connectServerlist.destroyPanel {
 * @param $4 sonstiges
 */
 alias dc.connectServerlist.events {
-  if (!%connect.dialog.obj) { halt }
+  if (!%dc.connect.dialog.obj) { halt }
   if ($2 == dclick) {
     if ($numtok($xdid($1,2).selpath,32) == 1) {
-      .noop $dcConnectDialog(%connect.dialog.obj,1).loadServers
+      .noop $dcConnectDialog(%dc.connect.dialog.obj,1).loadServers
     }
   }
   elseif ($2 == selchange) {
-    if ($3 == 2 && $xdid($1,2,root).num > 0 ) { .noop $dcConnectDialog(%connect.dialog.obj).selectTreeviewItem }
+    if ($3 == 2 && $xdid($1,2,root).num > 0 ) { .noop $dcConnectDialog(%dc.connect.dialog.obj).selectTreeviewItem }
   }
   elseif ($2 == sclick) {
     if ($3 == 75) {
-      if ($4 == 1) { .noop $dcConnectDialog(%connect.dialog.obj).connect }
-      if ($4 == 3) { .noop $dcConnectDialog(%connect.dialog.obj).addNetwork }
-      if ($4 == 4) { .noop $dcConnectDialog(%connect.dialog.obj).delNetwork }
+      if ($4 == 1) { .noop $dcConnectDialog(%dc.connect.dialog.obj).connect }
+      if ($4 == 3) { .noop $dcConnectDialog(%dc.connect.dialog.obj).addNetwork }
+      if ($4 == 4) { .noop $dcConnectDialog(%dc.connect.dialog.obj).delNetwork }
     }
     if ($3 == 76) {
-      if ($4 == 1) { .noop $dcConnectDialog(%connect.dialog.obj).newServer }
-      if ($4 == 2) { .noop $dcConnectDialog(%connect.dialog.obj).editServer }
-      if ($4 == 3) { .noop $dcConnectDialog(%connect.dialog.obj).delServer }
+      if ($4 == 1) { .noop $dcConnectDialog(%dc.connect.dialog.obj).newServer }
+      if ($4 == 2) { .noop $dcConnectDialog(%dc.connect.dialog.obj).editServer }
+      if ($4 == 3) { .noop $dcConnectDialog(%dc.connect.dialog.obj).delServer }
     }
-    if ($3 == 80) { .noop $dcConnectDialog(%connect.dialog.obj).saveNetworkData }
-    if ($3 == 81) { .noop $dcConnectDialog(%connect.dialog.obj).saveServerData } 
+    if ($3 == 80) { .noop $dcConnectDialog(%dc.connect.dialog.obj).saveNetworkData }
+    if ($3 == 81) { .noop $dcConnectDialog(%dc.connect.dialog.obj).saveServerData } 
   }
 }
 
@@ -1089,7 +1089,7 @@ alias dc.connectServerlist.events {
 */
 alias dcConnectBnc {
   var %this = dcConnectBnc           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -1122,7 +1122,7 @@ alias dcConnectBnc {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcConnectBnc.init(%x,$1)
 
   :destroy
@@ -1162,7 +1162,7 @@ alias dcConnectBnc {
 */
 alias -l dcConnectBnc.init {
   if ($2 == $null || $hget($2,database) != modul_connect_bnc) { 
-    var %db $dbs(modul_connect_bnc)
+    var %db $dcDbs(modul_connect_bnc)
     hadd %db createDB 1
   }
   else {
@@ -1171,8 +1171,8 @@ alias -l dcConnectBnc.init {
   }
   hadd $1 dbhash %db
   hadd $1 error.obj $dcError
-  hadd $1 bnclist $dbsList(%db,user)
-  hadd $1 typelist $dbsList(%db,script,bnc_types)
+  hadd $1 bnclist $dcDbsList(%db,user)
+  hadd $1 typelist $dcDbsList(%db,script,bnc_types)
   hadd $1 current.bnc $null
   hadd $1 mode new
 
@@ -1190,11 +1190,11 @@ alias -l dcConnectBnc.init {
 alias -l dcConnectBnc.destroy {
   .noop $dcError($hget($1,error.obj)).destroy
   if ($hget($1,createDB) == 1) {
-    .noop $dbs($hget($1,dbhash)).destroy
+    .noop $dcDbs($hget($1,dbhash)).destroy
   }
-  .noop $dbsList($hget($1,bnclist)).destroy
-  .noop $dbsList($hget($1,typelist)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcDbsList($hget($1,bnclist)).destroy
+  .noop $dcDbsList($hget($1,typelist)).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -1217,16 +1217,16 @@ alias -l dcConnectBnc.setBouncer {
 * @return 1 oder 0
 */
 alias -l dcConnectBnc.getBouncerData {
-  var %list $dbsList($hget($1,dbhash),user,$hget($1,current.bnc))
+  var %list $dcDbsList($hget($1,dbhash),user,$hget($1,current.bnc))
   if (%list) {
-    .noop $dbs($hget($1,dbhash),$hget($1,current.bnc)).setSection
-    hadd $1 type $dbs($hget($1,dbhash),type).getUserValue
-    hadd $1 address $dbs($hget($1,dbhash),address).getUserValue
-    hadd $1 port $dbs($hget($1,dbhash),port).getUserValue
-    hadd $1 user $dbs($hget($1,dbhash),user).getUserValue
-    hadd $1 pwd $decryptValue($dbs($hget($1,dbhash),pwd).getUserValue)
+    .noop $dcDbs($hget($1,dbhash),$hget($1,current.bnc)).setSection
+    hadd $1 type $dcDbs($hget($1,dbhash),type).getUserValue
+    hadd $1 address $dcDbs($hget($1,dbhash),address).getUserValue
+    hadd $1 port $dcDbs($hget($1,dbhash),port).getUserValue
+    hadd $1 user $dcDbs($hget($1,dbhash),user).getUserValue
+    hadd $1 pwd $decryptValue($dcDbs($hget($1,dbhash),pwd).getUserValue)
     hadd $1 mode edit
-    .noop $dbsList(%list).destroy
+    .noop $dcDbsList(%list).destroy
     return 1
   }
   else {
@@ -1246,16 +1246,16 @@ alias -l dcConnectBnc.connect {
     if ($2 == 0) { var %para $null }
     else { var %para -m }
 
-    var %loginmode $dbs($hget($1,dbhash),bnc_types,$hget($1,type)).getScriptValue
+    var %loginmode $dcDbs($hget($1,dbhash),bnc_types,$hget($1,type)).getScriptValue
 
     if (%loginmode == user:pwd) {
       var %pwd $hget($1,user) $+ $chr(58) $+ $hget($1,pwd)
       .server %para $hget($1,address) $hget($1,port) %pwd
     }
     elseif (%loginmode == pwd_ident) {
-      var %connect.obj $dcConnect
+      var %dc.connect.obj $dcConnect
       var %ident $dcConnect.getIdent(0,1)
-      .noop $dcConnect(%connect.obj).destroy
+      .noop $dcConnect(%dc.connect.obj).destroy
       var %ident $puttok(%ident,$hget($1,user) $+ @mybouncer.at,3,32)
       .server %para $hget($1,address) $hget($1,port) $hget($1,pwd) -i %ident
     }
@@ -1293,7 +1293,7 @@ alias -l dcConnectBnc.clearData {
 */
 alias -l dcConnectBnc.delBnc {
   if ($hget($1,current.bnc)) {
-    .noop $dbs($hget($1,dbhash),$hget($1,current.bnc)).deleteUserSection
+    .noop $dcDbs($hget($1,dbhash),$hget($1,current.bnc)).deleteUserSection
     .noop $dcConnectBnc($1).clearData
     return 1
   }
@@ -1318,12 +1318,12 @@ alias -l dcConnectBnc.delBnc {
 */
 alias -l dcConnectBnc.checkBncData {
   .noop $dcError($hget($1,error.obj)).clear
-  var %list $dbsList($hget($1,dbhash),user,$2)
+  var %list $dcDbsList($hget($1,dbhash),user,$2)
   if (%list) {
     if (($hget($1,mode) == new) || ($hget($1,mode) == edit && $hget($1,current.bnc) != $2)) {
       .noop $dcError($hget($1,error.obj),Bouncername bereits vorhanden).add
     }
-    .noop $dbsList(%list).destroy
+    .noop $dcDbsList(%list).destroy
   }
   if ($2 == $null) {
     .noop $dcError($hget($1,error.obj),Bouncername darf nicht leer sein).add
@@ -1334,7 +1334,7 @@ alias -l dcConnectBnc.checkBncData {
   if ($3 == $null) {
     .noop $dcError($hget($1,error.obj),Bouncertyp wurde nicht gewählt).add
   }
-  elseif ($dbs($hget($1,dbhash),bnc_types,$3).getScriptValue == $null) {
+  elseif ($dcDbs($hget($1,dbhash),bnc_types,$3).getScriptValue == $null) {
     .noop $dcError($hget($1,error.obj),Bouncertyp ist ungültig).add
   }
   if ($4 == $null) {
@@ -1381,16 +1381,16 @@ alias -l dcConnectBnc.checkBncData {
 */
 alias -l dcConnectBnc.saveBncData {
   if ($dcConnectBnc($1,$2,$3,$4,$5,$6,$7).checkBncData) {
-    .noop $dbs($hget($1,dbhash),$2).setSection
+    .noop $dcDbs($hget($1,dbhash),$2).setSection
     if ($hget($1,mode) == edit && $hget($1,current.bnc) != $2) {
-      var %line $read($dbs($hget($1,dbhash),config_user).get,w,* $+ $chr(91) $+ $hget($1,current.bnc) $+ $chr(93) $+ *,0)
-      .write -l $+ $readn $qt($dbs($hget($1,dbhash),config_user).get) $chr(91) $+ $2 $+ $chr(93)
+      var %line $read($dcDbs($hget($1,dbhash),config_user).get,w,* $+ $chr(91) $+ $hget($1,current.bnc) $+ $chr(93) $+ *,0)
+      .write -l $+ $readn $qt($dcDbs($hget($1,dbhash),config_user).get) $chr(91) $+ $2 $+ $chr(93)
     } 
-    .noop $dbs($hget($1,dbhash),type,$3).setUserValue
-    .noop $dbs($hget($1,dbhash),address,$4).setUserValue
-    .noop $dbs($hget($1,dbhash),port,$5).setUserValue
-    .noop $dbs($hget($1,dbhash),user,$6).setUserValue
-    .noop $dbs($hget($1,dbhash),pwd,$encryptValue($7)).setUserValue
+    .noop $dcDbs($hget($1,dbhash),type,$3).setUserValue
+    .noop $dcDbs($hget($1,dbhash),address,$4).setUserValue
+    .noop $dcDbs($hget($1,dbhash),port,$5).setUserValue
+    .noop $dcDbs($hget($1,dbhash),user,$6).setUserValue
+    .noop $dcDbs($hget($1,dbhash),pwd,$encryptValue($7)).setUserValue
 
     hadd $1 current.bnc $2
     hadd $1 type $3
@@ -1513,7 +1513,7 @@ alias -l dcConnectBncDialog.init {
 */
 alias -l dcConnectBncDialog.destroy {
   .noop $dcConnectBnc($hget($1,connect.bnc.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -1599,9 +1599,9 @@ alias -l dcConnectBncDialog.createControls {
 alias -l dcConnectBncDialog.fillBouncerList {
   var %list $dcConnectBnc($hget($1,connect.bnc.obj),bnclist).get
   if (%list) {
-    .noop $dbsList(%list).prepareWhile
-    while ($dbsList(%list).next) {
-      xdid -a $hget($1,dialog.name) 2 0 $dbsList(%list).getItem
+    .noop $dcDbsList(%list).prepareWhile
+    while ($dcDbsList(%list).next) {
+      xdid -a $hget($1,dialog.name) 2 0 $dcDbsList(%list).getItem
     }
     xdid -c $hget($1,dialog.name) 2 1
     hadd $1 bnc.sel 1
@@ -1617,10 +1617,10 @@ alias -l dcConnectBncDialog.fillBouncerList {
 */
 alias -l dcConnectBncDialog.setBouncerTypes {
   var %list $dcConnectBnc($hget($1,connect.bnc.obj),typelist).get
-  .noop $dbsList(%list).prepareWhile
+  .noop $dcDbsList(%list).prepareWhile
   if (%list) {
-    while ($dbsList(%list).next) {
-      xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $dbsList(%list).getItem
+    while ($dcDbsList(%list).next) {
+      xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $dcDbsList(%list).getItem
     }
   }
   return 1
@@ -1807,15 +1807,15 @@ alias -l dcConnectBncDialog.connect {
 * @param $1 dcConfig objekt
 */
 alias dc.connectBouncer.createPanel { 
-  set %connect.bnc.dialog.obj $dcConnectBncDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
+  set %dc.connect.bnc.dialog.obj $dcConnectBncDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
 }
 
 /*
 * Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
 */
 alias dc.connectBouncer.destroyPanel {
-  .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).destroy
-  unset %connect.bnc.*
+  .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).destroy
+  unset %dc.connect.bnc.*
 }
 
 /*
@@ -1828,14 +1828,14 @@ alias dc.connectBouncer.destroyPanel {
 */
 alias dc.connectBouncer.events { 
   if ($2 == sclick) {
-    if ($3 == 2) { .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).selectBNC }
+    if ($3 == 2) { .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).selectBNC }
     elseif ($3 == 75) {
-      if ($4 == 1) { .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).connect }
-      elseif ($4 == 3) { .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).newBNC }  
-      elseif ($4 == 4) { .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).editBNC }
-      elseif ($4 == 5) { .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).delBNC }
+      if ($4 == 1) { .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).connect }
+      elseif ($4 == 3) { .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).newBNC }  
+      elseif ($4 == 4) { .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).editBNC }
+      elseif ($4 == 5) { .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).delBNC }
     }
-    elseif ($3 == 80) { .noop $dcConnectBncDialog(%connect.bnc.dialog.obj).saveBncData }
+    elseif ($3 == 80) { .noop $dcConnectBncDialog(%dc.connect.bnc.dialog.obj).saveBncData }
   }
 }
 
@@ -1843,11 +1843,11 @@ alias dc.connectBouncer.events {
 * Class Alias
 * var %var $fkeyList
 *
-* param $1 dbs objekt
+* param $1 dcDbs objekt
 */
 alias dcConnectAcList {
   var %this = dcConnectAcList           | ; Name of Object (Alias name)
-  var %base = BaseListClass        | ; Name of BaseClass, $null for none  
+  var %base = dcList        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -1879,7 +1879,7 @@ alias dcConnectAcList {
   */
 
   :init
-  var %x $baseListClass(%this,%base).init
+  var %x $dcList(%this,%base).init
   return $dcConnectAcList.init(%x,$1)
 
   :destroy
@@ -1902,16 +1902,16 @@ alias dcConnectAcList {
 * Initialisiert die Liste
 *
 * @param $1 dcConnectAcList objekt
-* @param $2 dbs objekt
+* @param $2 dcDbs objekt
 * @return dcConnectAcList objekt
 */
 alias -l dcConnectAcList.init {
-  hadd $1 list $dbsList($2,user,autoconnect)
+  hadd $1 list $dcDbsList($2,user,autoconnect)
   hadd $1 dbhash $2
   hadd $1 getdata 1
   if ($hget($1,list)) {
     hadd $1 pos 1
-    hadd $1 last $dbsList($hget($1,list)).count
+    hadd $1 last $dcDbsList($hget($1,list)).count
     .noop $dcConnectAcList.getData($1)
 
   }
@@ -1930,9 +1930,9 @@ alias -l dcConnectAcList.init {
 */
 alias -l dcConnectAcList.destroy {
   if ($hget($1,list)) {
-    .noop $dbsList($hget($1,list)).destroy
+    .noop $dcDbsList($hget($1,list)).destroy
   }
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -1944,18 +1944,18 @@ alias -l dcConnectAcList.destroy {
 */
 alias dcConnectAcList.getData {
   if ($hget($1,list)) {
-    .noop $dbsList($hget($1,list),$hget($1,pos)).setPos
-    hadd $1 active $gettok($dbsList($hget($1,list)).getValue,1,44)
-    var %type $gettok($dbsList($hget($1,list)).getItem,1,95)
+    .noop $dcDbsList($hget($1,list),$hget($1,pos)).setPos
+    hadd $1 active $gettok($dcDbsList($hget($1,list)).getValue,1,44)
+    var %type $gettok($dcDbsList($hget($1,list)).getItem,1,95)
     if (%type == SERVER) {
       hadd $1 type Server
-      hadd $1 group $gettok($dbsList($hget($1,list)).getItem,2,95)
-      hadd $1 server $gettok($dbsList($hget($1,list)).getValue,2,44)
+      hadd $1 group $gettok($dcDbsList($hget($1,list)).getItem,2,95)
+      hadd $1 server $gettok($dcDbsList($hget($1,list)).getValue,2,44)
     }
     else {
       hadd $1 type Bouncer
       hadd $1 group $null
-      hadd $1 server $gettok($dbsList($hget($1,list)).getItem,2,95)
+      hadd $1 server $gettok($dcDbsList($hget($1,list)).getItem,2,95)
     }
   }
   return 1
@@ -1969,7 +1969,7 @@ alias dcConnectAcList.getData {
 */
 alias dcConnectAc {
   var %this = dcConnectAc           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -2002,7 +2002,7 @@ alias dcConnectAc {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcConnectAc.init(%x,$1)
 
   :destroy
@@ -2030,7 +2030,7 @@ alias dcConnectAc {
 */
 alias -l dcConnectAc.init {
   if ($2 == $null || $hget($2,database) != modul_connect) { 
-    var %db $dbs(modul_connect)
+    var %db $dcDbs(modul_connect)
     hadd %db createDB 1
   }
   else {
@@ -2038,7 +2038,7 @@ alias -l dcConnectAc.init {
     hadd %db createDB 0
   }
   hadd $1 dbhash %db
-  .noop $dbs(%db,autoconnect).setSection
+  .noop $dcDbs(%db,autoconnect).setSection
   hadd $1 error.obj $dcError
   hadd $1 aclist $dcConnectAcList(%db)
 
@@ -2056,10 +2056,10 @@ alias -l dcConnectAc.init {
 alias -l dcConnectAc.destroy {
   .noop $dcError($hget($1,error.obj)).destroy
   if ($hget($1,createDB) == 1) {
-    .noop $dbs($hget($1,dbhash)).destroy
+    .noop $dcDbs($hget($1,dbhash)).destroy
   }
   .noop $dcConnectAcList($hget($1,aclist)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -2070,7 +2070,7 @@ alias -l dcConnectAc.destroy {
 * @return 1
 */
 alias -l dcConnectAc.clearList {
-  .noop $dbs($hget($1,dbhash)).deleteUserSection
+  .noop $dcDbs($hget($1,dbhash)).deleteUserSection
   return 1
 }
 
@@ -2084,10 +2084,10 @@ alias -l dcConnectAc.clearList {
 */
 alias -l dcConnectAc.addServer {
   if (1 != $null || $2 != $null || $3 != $null) {
-    var %server $serverData($3)
-    var %group $serverData(%server,group).get
-    .noop $serverData(%server).destroy
-    .noop $dbs($hget($1,dbhash),SERVER_ $+ %group,$2 $+ $chr(44) $+ $3).setUserValue
+    var %server $dcServer($3)
+    var %group $dcServer(%server,group).get
+    .noop $dcServer(%server).destroy
+    .noop $dcDbs($hget($1,dbhash),SERVER_ $+ %group,$2 $+ $chr(44) $+ $3).setUserValue
     return 1
   }
   else {
@@ -2106,7 +2106,7 @@ alias -l dcConnectAc.addServer {
 */
 alias -l dcConnectAc.addBouncer {
   if (1 != $null || $2 != $null || $3 != $null) {
-    .noop $dbs($hget($1,dbhash),BOUNCER_ $+ $3,$2).setUserValue
+    .noop $dcDbs($hget($1,dbhash),BOUNCER_ $+ $3,$2).setUserValue
     return 1
   }
   else {
@@ -2224,7 +2224,7 @@ alias -l dcConnectAcDialog.init {
 */
 alias -l dcConnectAcDialog.destroy {
   .noop $dcConnectAc($hget($1,connect.ac.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -2301,9 +2301,9 @@ alias -l dcConnectAcDialog.fillAutoConnectList {
       var %type $dcConnectAcList(%list).type
       var %network $dcConnectAcList(%list).group     
       if (%type == Server) {
-        var %server $serverData($dcConnectAcList(%list).server)
-        var %serverdesc $serverData(%server,desc).get
-        .noop $serverData(%server).destroy
+        var %server $dcServer($dcConnectAcList(%list).server)
+        var %serverdesc $dcServer(%server,desc).get
+        .noop $dcServer(%server).destroy
       }
       else {
         var %serverdesc $dcConnectAcList(%list).server
@@ -2324,12 +2324,12 @@ alias -l dcConnectAcDialog.fillAutoConnectList {
 * @return 1
 */
 alias -l dcConnectAcDialog.fillNetworkList {
-  var %list $networkList
-  .noop $networkList(%list).prepareWhile
-  while ($networkList(%list).next) {
-    xdid -a $hget($1,dialog.name) 3 0 0 0 0 0 $networkList(%list).getValue
+  var %list $dcNetworkList
+  .noop $dcNetworkList(%list).prepareWhile
+  while ($dcNetworkList(%list).next) {
+    xdid -a $hget($1,dialog.name) 3 0 0 0 0 0 $dcNetworkList(%list).getValue
   }
-  .noop $networkList(%list).destroy
+  .noop $dcNetworkList(%list).destroy
   if ($xdid($hget($1,dialog.name),3).num > 0) {
     xdid -e $hget($1,dialog.name) 3
     xdid -c $hget($1,dialog.name) 3 1
@@ -2348,14 +2348,14 @@ alias -l dcConnectAcDialog.fillServerList {
   xdid -r $hget($1,dialog.name) 4
   xdid -b $hget($1,dialog.name) 4
   xdid -b $hget($1,dialog.name) 81
-  var %list $serverList($xdid($hget($1,dialog.name),3).seltext)
-  .noop $serverList(%list).prepareWhile
-  while ($serverList(%list).next) {
-    var %server $ServerData($serverList(%list).getValue)
-    xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $serverData(%server,desc).get
-    .noop $serverData(%server).destroy
+  var %list $dcServerList($xdid($hget($1,dialog.name),3).seltext)
+  .noop $dcServerList(%list).prepareWhile
+  while ($dcServerList(%list).next) {
+    var %server $dcServer($dcServerList(%list).getValue)
+    xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $dcServer(%server,desc).get
+    .noop $dcServer(%server).destroy
   }
-  .noop $serverList(%list).destroy
+  .noop $dcServerList(%list).destroy
   if ($xdid($hget($1,dialog.name),4).num > 0) {
     xdid -e $hget($1,dialog.name) 4
 
@@ -2386,9 +2386,9 @@ alias -l dcConnectAcDialog.fillBouncerList {
   var %bnc $dcConnectBnc
   var %list $dcConnectBnc(%bnc,bnclist).get
   if (%list) {
-    .noop $dbsList(%list).prepareWhile
-    while ($dbsList(%list).next) {
-      xdid -a $hget($1,dialog.name) 5 0 0 0 0 0 $dbsList(%list).getItem
+    .noop $dcDbsList(%list).prepareWhile
+    while ($dcDbsList(%list).next) {
+      xdid -a $hget($1,dialog.name) 5 0 0 0 0 0 $dcDbsList(%list).getItem
     }
     .noop $dcConnectBnc(%bnc).destroy
     if ($xdid($hget($1,dialog.name),5).num > 0) {
@@ -2499,7 +2499,7 @@ alias -l dcConnectAcDialog.addBouncer {
 alias -l dcConnectAcDialog.delEntry {
   var %sel $xdid($hget($1,dialog.name),2).sel
   if ($xdid($hget($1,dialog.name),2,%sel,3).text == Server) {
-    set %connect.ac.mode add
+    set %dc.connect.ac.mode add
     xdid -t $hget($1,dialog.name) 81 Hinzufügen
   }
   xdid -d $hget($1,dialog.name) 2 %sel
@@ -2568,18 +2568,18 @@ alias -l dcConnectAcDialog.saveList {
   while (%i <= $xdid($hget($1,dialog.name),2).num) {
     var %active $calc($xdid($hget($1,dialog.name),2,%i).state - 1)
     if ($xdid($hget($1,dialog.name),2,%i,3).text == Server) {
-      var %list $serverList($xdid($hget($1,dialog.name),2,%i,4).text)
-      .noop $serverList(%list).prepareWhile
-      while ($serverList(%list).next) {
-        var %serverdata $serverData($serverList(%list).getValue)
-        if ($serverData(%serverdata,desc).get == $xdid($hget($1,dialog.name),2,%i,5).text) {
-          var %server $serverList(%list).getValue
-          .noop $serverData(%serverdata).destroy
+      var %list $dcServerList($xdid($hget($1,dialog.name),2,%i,4).text)
+      .noop $dcServerList(%list).prepareWhile
+      while ($dcServerList(%list).next) {
+        var %serverdata $dcServer($dcServerList(%list).getValue)
+        if ($dcServer(%serverdata,desc).get == $xdid($hget($1,dialog.name),2,%i,5).text) {
+          var %server $dcServerList(%list).getValue
+          .noop $dcServer(%serverdata).destroy
           break
         }
-        .noop $serverData(%serverdata).destroy
+        .noop $dcServer(%serverdata).destroy
       }
-      .noop $serverList(%list).destroy     
+      .noop $dcServerList(%list).destroy     
       .noop $dcConnectAc($hget($1,connect.ac.obj),%active,%server).addServer
     }
     else {
@@ -2596,7 +2596,7 @@ alias -l dcConnectAcDialog.saveList {
 * @param $1 dcConfig objekt
 */
 alias dc.connectAutoconnect.createPanel {
-  set %connect.ac.dialog.obj $dcConnectAcDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
+  set %dc.connect.ac.dialog.obj $dcConnectAcDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
 
 }
 
@@ -2604,8 +2604,8 @@ alias dc.connectAutoconnect.createPanel {
 * Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
 */
 alias dc.connectAutoconnect.destroyPanel {
-  .noop $dcConnectAcDialog(%connect.ac.dialog.obj).destroy
-  unset %connect.ac.* 
+  .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).destroy
+  unset %dc.connect.ac.* 
 }
 
 /*
@@ -2618,16 +2618,16 @@ alias dc.connectAutoconnect.destroyPanel {
 */
 alias dc.connectAutoconnect.events { 
   if ($2 == sclick) {
-    if ($3 == 3) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj).fillServerList }
-    if ($3 == 75 && $4 == 1) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj,up).move }
-    if ($3 == 76 && $4 == 1) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj,down).move }
-    if ($3 == 80) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj).saveList }
-    if ($3 == 81) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj).addServer }
-    if ($3 == 82) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj).addBouncer }
-    if ($3 == 83) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj).delEntry }
+    if ($3 == 3) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).fillServerList }
+    if ($3 == 75 && $4 == 1) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj,up).move }
+    if ($3 == 76 && $4 == 1) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj,down).move }
+    if ($3 == 80) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).saveList }
+    if ($3 == 81) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).addServer }
+    if ($3 == 82) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).addBouncer }
+    if ($3 == 83) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).delEntry }
   }
   elseif ($2 == selected) {
-    if ($3 == 2) { .noop $dcConnectAcDialog(%connect.ac.dialog.obj).selectListEntry }
+    if ($3 == 2) { .noop $dcConnectAcDialog(%dc.connect.ac.dialog.obj).selectListEntry }
   }
 }
 
@@ -2662,17 +2662,17 @@ alias dc.connect.autoStart {
 * Wird beim Verbinden zu einem Server/Netzwerk ausgeführt
 */
 alias dc.connect.perform {
-  var %db $dbs(modul_connect,$network,r)
+  var %db $dcDbs(modul_connect,$network,r)
   if (%db) {
-    var %list $dbsList(%db,user,perform)
+    var %list $dcDbsList(%db,user,perform)
     if (%list) {
-      .noop $dbsList(%list).prepareWhile
-      while ($dbsList(%list).next) {
-        $dbsList(%list).getValue
+      .noop $dcDbsList(%list).prepareWhile
+      while ($dcDbsList(%list).next) {
+        $dcDbsList(%list).getValue
       }
-      .noop $dbsList(%list).destroy
+      .noop $dcDbsList(%list).destroy
     }
-    .noop $dbs(%db).destroy
+    .noop $dcDbs(%db).destroy
   }
 }
 
@@ -2683,10 +2683,10 @@ alias dc.connect.addIdent {
     else { var %server $gettok(%param,1,32) }
     if ($server(0,%server) == 0) { var %group $server(%server).group }
     else { var %group %server }
-    .var %connect $dcConnect
-    .noop $dcConnect(%connect,%group).setNetwork
-    var %ident $dcConnect(%connect,1,1).getIdent
-    .noop $dcConnect(%connect).destroy
+    .var %dc.connect $dcConnect
+    .noop $dcConnect(%dc.connect,%group).setNetwork
+    var %ident $dcConnect(%dc.connect,1,1).getIdent
+    .noop $dcConnect(%dc.connect).destroy
     var %pos $findtok(%param,-j,1,32)
     if (%pos) {
       hadd -m alias_server param $instok(%param,-i %ident,%pos,32)

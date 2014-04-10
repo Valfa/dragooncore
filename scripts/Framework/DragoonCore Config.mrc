@@ -64,10 +64,10 @@ alias dcConfig {
   return $dcConfig.addRebarEntrys($1,$2)
 
   :get
-  return $baseClass($1,$2).get
+  return $dcBase($1,$2).get
 
   :set
-  return $baseClass($1,$2,$3).set
+  return $dcBase($1,$2,$3).set
 
   :selectRebarEntry
   return $dcConfig.selectRebarEntry($1,$2)
@@ -103,8 +103,8 @@ alias -l dcConfig.init {
   if ($2 == $null) { hadd $1 dialog.name dcConf }
   else { hadd $1 dialog.name $2 }
 
-  hadd $1 dbhash $dbs(fw_cfg_tree)
-  hadd $1 config.rebarID $dbs(%framework.dbhash,config_dialog,rebarID).getScriptValue
+  hadd $1 dbhash $dcDbs(fw_cfg_tree)
+  hadd $1 config.rebarID $dcDbs(%dc.fw.dbash,config_dialog,rebarID).getScriptValue
   hadd $1 limit_get config.rebarID,currentTree,currentSelpath,currentPanel,currentPanel.dbhash,dialog.name
   hadd $1 limit_set config.local
   hadd $1 jumpin.name $3
@@ -127,10 +127,10 @@ alias -l dcConfig.init {
 alias -l dcConfig.destroy {
   dc. $+ $hget($1,currentPanel) $+ .destroyPanel
   if ($hget($1,currentPanel.dbhash) != $null && $hget($1,currentPanel.dbhash) != 0) {
-    .noop $dbs($hget($1,currentPanel.dbhash)).destroy
+    .noop $dcDbs($hget($1,currentPanel.dbhash)).destroy
   }
   .hfree -w dcConfTree_*
-  .noop $dbs($hget($1,dbhash)).destroy
+  .noop $dcDbs($hget($1,dbhash)).destroy
   .noop $dcDialog($1).destroy
   return 1
 }
@@ -198,26 +198,26 @@ alias -l dcConfig.fillRebar {
 * @return 1
 */
 alias -l dcConfig.addRebarEntrys {
-  var %list.outer $dbsList($hget($1,dbhash),$2)
-  .noop $dbsList(%list.outer).prepareWhile
-  while ($dbsList(%list.outer).next) {
-    var %list.inner $dbsList($hget($1,dbhash),$2,$dbsList(%list.outer).getItem)
-    .noop $dbsList(%list.inner).prepareWhile
-    while ($dbsList(%list.inner).next) {
-      if ($dbsList(%list.inner).getItem == n0) {
+  var %list.outer $dcDbsList($hget($1,dbhash),$2)
+  .noop $dcDbsList(%list.outer).prepareWhile
+  while ($dcDbsList(%list.outer).next) {
+    var %list.inner $dcDbsList($hget($1,dbhash),$2,$dcDbsList(%list.outer).getItem)
+    .noop $dcDbsList(%list.inner).prepareWhile
+    while ($dcDbsList(%list.inner).next) {
+      if ($dcDbsList(%list.inner).getItem == n0) {
         hinc $1 treeviewID
-        xdid -a $hget($1,dialog.name) $hget($1,config.rebarID) 0 + 0 200 0 0 $rgb(0,0,255) $dbsList(%list.inner).getValue $chr(9) $hget($1,treeviewID) treeview 0 30 200 515 showsel hasbuttons haslines linesatroot
-        if ($hget($1,jumpin.name) == $dbsList(%list.outer).getItem) {
+        xdid -a $hget($1,dialog.name) $hget($1,config.rebarID) 0 + 0 200 0 0 $rgb(0,0,255) $dcDbsList(%list.inner).getValue $chr(9) $hget($1,treeviewID) treeview 0 30 200 515 showsel hasbuttons haslines linesatroot
+        if ($hget($1,jumpin.name) == $dcDbsList(%list.outer).getItem) {
           hadd $1 jumpin.point $calc($hget($1,treeviewID) - $hget($1,config.rebarID))
         }
       }
       else {
-        hadd -m dcConfTree_ $+ $hget($1,treeviewID) $dbsList(%list.inner).getItem $dbsList(%list.inner).getValue
-        var %treeviewPos $mid($dbsList(%list.inner).getItem,2)
-        var %treeviewLine $gettok($dbsList(%list.inner).getValue,4-,44)
+        hadd -m dcConfTree_ $+ $hget($1,treeviewID) $dcDbsList(%list.inner).getItem $dcDbsList(%list.inner).getValue
+        var %treeviewPos $mid($dcDbsList(%list.inner).getItem,2)
+        var %treeviewLine $gettok($dcDbsList(%list.inner).getValue,4-,44)
         xdid -a $hget($1,dialog.name) $hget($1,treeviewID) $+(%treeviewPos,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) %treeviewLine,$chr(9),%treeviewLine)
-        if ($gettok($dbsList(%list.inner).getValue,1,44) == local) {
-          var %db_tmp $dbs($gettok($dbsList(%list.inner).getValue,2,44))
+        if ($gettok($dcDbsList(%list.inner).getValue,1,44) == local) {
+          var %db_tmp $dcDbs($gettok($dcDbsList(%list.inner).getValue,2,44))
           var %wc $replace($nopath($hget(%db_tmp,config_user)),.ini,.*.ini)
           var %i 1
           var %max $findfile(dcdb/user/Module,%wc,0)
@@ -227,13 +227,13 @@ alias -l dcConfig.addRebarEntrys {
             xdid -a $hget($1,dialog.name) $hget($1,treeviewID) $+(%treeviewPos %i,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) %net,$chr(9),%net)
             inc %i
           }
-          .noop $dbs(%db_tmp).destroy
+          .noop $dcDbs(%db_tmp).destroy
         }
       }
     }
-    .noop $dbsList(%list.inner).destroy
+    .noop $dcDbsList(%list.inner).destroy
   }
-  .noop $dbsList(%list.outer).destroy
+  .noop $dcDbsList(%list.outer).destroy
 
 }
 
@@ -263,10 +263,10 @@ alias dcConfig.initDbs {
   var %tmp $gettok($hget(dcConfTree_ $+ $hget($1,currentTree),n $+ $gettok($hget($1,currentSelpath),1,32)),2,44)
   if (%tmp != none) {
     if ($numtok($hget($1,currentSelpath),32) == 1) { 
-      return $dbs(%tmp) 
+      return $dcDbs(%tmp) 
     }
     else {
-      return $dbs(%tmp,$xdid($hget($1,dialog.name),$hget($1,currentTree)).seltext)
+      return $dcDbs(%tmp,$xdid($hget($1,dialog.name),$hget($1,currentTree)).seltext)
     }
   }
   else {
@@ -284,7 +284,7 @@ alias -l dcConfig.selectTreeviewItem {
   if ($hget($1,currentPanel) != $null) {
     dc. $+ $hget($1,currentPanel) $+ .destroyPanel
     if ($hget($1,currentPanel.dbhash) != $null && $hget($1,currentPanel.dbhash) != 0) {
-      .noop $dbs($hget($1,currentPanel.dbhash)).destroy
+      .noop $dcDbs($hget($1,currentPanel.dbhash)).destroy
       hadd $1 currentPanel.dbhash 0
     }
     xdialog -d $hget($1,dialog.name) 1009
@@ -384,7 +384,7 @@ alias -l dcConfig.loadDefaults {
 * Alias zum Aufrufen des Config Dialoges
 */
 alias config {
-  set %config.jumpin $1
+  set %dc.config.jumpin $1
   dialog -ma dcConf dcConf_table
 }
 
@@ -403,11 +403,11 @@ on *:dialog:dcConf:*:*: {
   if ($devent == init) {
     dcx Mark $dname dcConf.events
     xdialog -b $dname +twy
-    set %config.obj $dcConfig($dname,%config.jumpin)
+    set %dc.config.obj $dcConfig($dname,%dc.config.jumpin)
   }
   elseif ($devent == close) {
-    .noop $dcConfig(%config.obj).destroy
-    unset %config.*
+    .noop $dcConfig(%dc.config.obj).destroy
+    unset %dc.config.*
   }
 }
 
@@ -420,22 +420,22 @@ on *:dialog:dcConf:*:*: {
 * @param $4 sonstiges
 */
 alias dcConf.events {
-  if (%config.obj != $null) {
+  if (%dc.config.obj != $null) {
     if ($2 == sclick) {
       if ($3 == 1010) {
-        if ($4 == 1) { .noop $dcConfig(%config.obj).addConfig }
-        elseif ($4 == 2) { .noop $dcConfig(%config.obj).loadDefaults }
-        elseif ($4 == 3) { .noop $dcConfig(%config.obj).delConfig }
+        if ($4 == 1) { .noop $dcConfig(%dc.config.obj).addConfig }
+        elseif ($4 == 2) { .noop $dcConfig(%dc.config.obj).loadDefaults }
+        elseif ($4 == 3) { .noop $dcConfig(%dc.config.obj).delConfig }
       }
-      elseif ($3 == $dcConfig(%config.obj,config.rebarId).get) {   
-        if ($4 == 1) { xdid -m $1 $dcConfig(%config.obj,config.rebarID).get 1 }
-        .noop $dcConfig(%config.obj,$4).selectRebarEntry
+      elseif ($3 == $dcConfig(%dc.config.obj,config.rebarId).get) {   
+        if ($4 == 1) { xdid -m $1 $dcConfig(%dc.config.obj,config.rebarID).get 1 }
+        .noop $dcConfig(%dc.config.obj,$4).selectRebarEntry
       }
     }
     if ($2 == selchange) {
-      if ($3 > $dcConfig(%config.obj,config.rebarID).get) { .noop $dcConfig(%config.obj).selectTreeviewItem }
+      if ($3 > $dcConfig(%dc.config.obj,config.rebarID).get) { .noop $dcConfig(%dc.config.obj).selectTreeviewItem }
     }
-    if ($3 > 0 && $3 < 1000) { dc. $+ $dcConfig(%config.obj,currentPanel).get $+ .events $1- }
+    if ($3 > 0 && $3 < 1000) { dc. $+ $dcConfig(%dc.config.obj,currentPanel).get $+ .events $1- }
   }
 }
 
@@ -493,7 +493,7 @@ alias dcConfigLocal {
   return $dcConfigLocal.addConfig($1)
 
   :get
-  return $baseClass($1,$2).get
+  return $dcBase($1,$2).get
 }
 
 /*
@@ -523,7 +523,7 @@ alias -l dcConfigLocal.init {
 */
 alias -l dcConfigLocal.destroy {
 
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -547,15 +547,15 @@ alias -l dcConfigLocal.createControls {
 * return 1
 */
 alias -l dcConfigLocal.fillDropDown {
-  var %dbhash $networkList
-  .noop $networkList(%dbhash).prepareWhile
-  while ($networkList(%dbhash).next) {
-    xdid -a $hget($1,dialog.name) 1 0 0 0 0 0 $networkList(%dbhash).getValue
-    if ($networkList(%dbhash).getValue == $network) {
-      xdid -c $hget($1,dialog.name) 1 $networkList(%dbhash).getPos
+  var %list $dcNetworkList
+  .noop $dcNetworkList(%list).prepareWhile
+  while ($dcNetworkList(%list).next) {
+    xdid -a $hget($1,dialog.name) 1 0 0 0 0 0 $dcNetworkList(%list).getValue
+    if ($dcNetworkList(%list).getValue == $network) {
+      xdid -c $hget($1,dialog.name) 1 $dcNetworkList(%list).getPos
     }
   }
-  .noop $networkList(%dbhash).destroy
+  .noop $dcNetworkList(%list).destroy
 }
 
 /*
@@ -565,7 +565,7 @@ alias -l dcConfigLocal.fillDropDown {
 * @return 1
 */
 alias -l dcConfigLocal.addConfig {
-  .noop $dcConfig(%config.obj,config.local,$xdid($hget($1,dialog.name),1).seltext).set
+  .noop $dcConfig(%dc.config.obj,config.local,$xdid($hget($1,dialog.name),1).seltext).set
   dialog -x $hget($1,dialog.name)
 }
 
@@ -585,12 +585,12 @@ on *:dialog:dcConf_local:*:*: {
   if ($devent == init) {
     dcx Mark $dname dcConf_local.events
     xdialog -b $dname +twy
-    set %config.local.obj $dcConfigLocal($dname)
+    set %dc.config.local.obj $dcConfigLocal($dname)
 
 
   }
   elseif ($devent == close) {
-    .noop $dcConfigLocal(%config.local.obj).destroy
+    .noop $dcConfigLocal(%dc.config.local.obj).destroy
   }
 }
 
@@ -604,6 +604,6 @@ on *:dialog:dcConf_local:*:*: {
 */
 alias dcConf_local.events {
   if ($2 == sclick) {
-    if ($3 == 2) { .noop $dcConfigLocal(%config.local.obj).addConfig }
+    if ($3 == 2) { .noop $dcConfigLocal(%dc.config.local.obj).addConfig }
   }
 }

@@ -59,28 +59,28 @@ menu channel,status {
   config:/config
 }
 
-alias -l framework.initRemote {
-  hmake remote 100
-  var %list.outer $dbsList(%framework.dbhash,remote)
-  .noop $dbsList(%list.outer).prepareWhile
-  while ($dbsList(%list.outer).next) {
-    hadd remote $dbsList(%list.outer).getItem $null
-    var %list.inner $dbsList(%framework.dbhash,remote,$dbsList(%list.outer).getItem)
-    .noop $dbsList(%list.inner).prepareWhile
-    while ($dbsList(%list.inner).next) {
-      hadd remote $dbsList(%list.outer).getItem $hget(remote,$dbsList(%list.outer).getItem) $+ $dbsList(%list.inner).getValue $+ $chr(44)
-    }
-    .noop $dbsList(%list.inner).destroy
+alias server {
+  hadd -m alias_server param $1-
+  if ($1 == -s || $1 == -a || $1 == -r) {
+    .server $1-
   }
-  .noop $dbsList(%list.outer).destroy
+  else {
+    var %list $dcDbs(%dc.fw.dbhash,onRemote,alias_server).getUserValue
+    var %i 1
+    while (%i <= $numtok(%list,44)) {
+      $gettok(%list,%i,44)
+      inc %i
+    }
+  }
+  server $hget(alias_server,param)
+  halt
 }
 
 on *:start:{
-  set %framework.dbhash $dbs(framework)
-  set %fkey.obj $dcFkey
+  set %dc.fw.dbhash $dcDbs(framework)
+  set %dc.fkey.obj $dcFkey
   set %oop 0
-  ;framework.initRemote
-  var %list $dbs(%framework.dbhash,onRemote,onStart).getUserValue
+  var %list $dcDbs(%dc.fw.dbhash,onRemote,onStart).getUserValue
   var %i 1
   while (%i <= $numtok(%list,44)) {
     $gettok(%list,%i,44)
@@ -89,14 +89,14 @@ on *:start:{
 }
 
 on *:exit:{
-  .noop $dbs(%framework.dbhash).destroy
-  unset %framework.dbhash
+  .noop $dcDbs(%dc.fw.dbhash).destroy
+  unset %dc.fw.dbhash
   unset %fkey.obj
   unset %oop
 }
 
 on *:connect:{
-  var %list $dbs(%framework.dbhash,onRemote,onConnect).getUserValue
+  var %list $dcDbs(%dc.fw.dbhash,onRemote,onConnect).getUserValue
   var %i 1
   while (%i <= $numtok(%list,44)) {
     $gettok(%list,%i,44)
@@ -105,7 +105,7 @@ on *:connect:{
 }
 
 on *:Input:*: {
-  var %list $dbs(%framework.dbhash,onRemote,onInput).getUserValue
+  var %list $dcDbs(%dc.fw.dbhash,onRemote,onInput).getUserValue
   if (%list) {
     if ($left($1,1) == /) && ($ctrlenter == $false) { return }
     hmake input_ $+ $active 100

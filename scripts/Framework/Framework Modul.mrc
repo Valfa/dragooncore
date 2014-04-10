@@ -71,7 +71,7 @@ alias -l dcModulList.init {
 */
 alias dcModul {
   var %this = dcModul           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -103,7 +103,7 @@ alias dcModul {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcModul.init(%x)
 
   :destroy
@@ -148,7 +148,7 @@ alias -l dcModul.init {
 */
 alias -l dcModul.destroy {
   .noop $dcModulList($hget($1,listhash)).destroy
-  .noop baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -209,51 +209,51 @@ alias -l dcModul.getModulInfo {
 * @return 1 oder 0
 */
 alias -l dcModul.loadModul {
-  var %db $dbs(modul_ $+ $hget($1,modul.current))
+  var %db $dcDbs(modul_ $+ $hget($1,modul.current))
   if (%db) {
-    var %list $dbsList(%db,script,onRemote)
+    var %list $dcDbsList(%db,script,onRemote)
     if (%list) {
-      .noop $dbsList(%list).prepareWhile
-      .noop $dbs(%framework.dbhash,onRemote).setSection
-      while ($dbsList(%list).next) {
-        var %tmp $dbs(%framework.dbhash,$dbsList(%list).getItem).getUserValue
-        var %tmp $addtok(%tmp,$dbsList(%list).getValue,44)
-        .noop $dbs(%framework.dbhash,$dbsList(%list).getItem,%tmp).setUserValue
+      .noop $dcDbsList(%list).prepareWhile
+      .noop $dcDbs(%dc.fw.dbhash,onRemote).setSection
+      while ($dcDbsList(%list).next) {
+        var %tmp $dcDbs(%dc.fw.dbhash,$dcDbsList(%list).getItem).getUserValue
+        var %tmp $addtok(%tmp,$dcDbsList(%list).getValue,44)
+        .noop $dcDbs(%dc.fw.dbhash,$dcDbsList(%list).getItem,%tmp).setUserValue
       }
-      .noop $dbsList(%list).destroy
+      .noop $dcDbsList(%list).destroy
     }
 
-    var %list $dbsList(%db,script,configTree)
+    var %list $dcDbsList(%db,script,configTree)
     if (%list) {
-      var %section $dbs(%db,modul_config,configTree).getScriptValue
-      var %tree_db $dbs(fw_cfg_tree)
-      .noop $dbsList(%list).prepareWhile
-      while ($dbsList(%list).next) {
-        .noop $dbs(%tree_db,%section,$dbsList(%list).getItem,$dbsList(%list).getValue).setUserValue
+      var %section $dcDbs(%db,modul_config,configTree).getScriptValue
+      var %tree_db $dcDbs(fw_cfg_tree)
+      .noop $dcDbsList(%list).prepareWhile
+      while ($dcDbsList(%list).next) {
+        .noop $dcDbs(%tree_db,%section,$dcDbsList(%list).getItem,$dcDbsList(%list).getValue).setUserValue
       }
-      .noop $dbsList(%list).destroy
-      .noop $dbs(%tree_db).destroy
+      .noop $dcDbsList(%list).destroy
+      .noop $dcDbs(%tree_db).destroy
     }
 
-    var %list $dbsList(%db,script,fkey)
+    var %list $dcDbsList(%db,script,fkey)
     if (%list) {
-      var %section $dbs(%db,modul_config,fkey).getScriptValue
-      var %fkey_db $dbs(fw_fkey)
-      .noop $dbs(%fkey_db,%section).setSection
-      .noop $dbsList(%list).prepareWhile
-      while ($dbsList(%list).next) {
-        .noop $dbs(%fkey_db,$dbsList(%list).getItem,$dbsList(%list).getValue).setUserValue
+      var %section $dcDbs(%db,modul_config,fkey).getScriptValue
+      var %fkey_db $dcDbs(fw_fkey)
+      .noop $dcDbs(%fkey_db,%section).setSection
+      .noop $dcDbsList(%list).prepareWhile
+      while ($dcDbsList(%list).next) {
+        .noop $dcDbs(%fkey_db,$dcDbsList(%list).getItem,$dcDbsList(%list).getValue).setUserValue
       }
-      .noop $dbsList(%list).destroy
-      .noop $dbs(%fkey_db,__groups__,%section,%section).setUserValue
-      .noop $dbs(%fkey_db).destroy
+      .noop $dcDbsList(%list).destroy
+      .noop $dcDbs(%fkey_db,__groups__,%section,%section).setUserValue
+      .noop $dcDbs(%fkey_db).destroy
     }
 
-    .noop $dbs(%db).destroy
+    .noop $dcDbs(%db).destroy
     .load -rs $qt($hget($1,modul.file))
     if ($isalias(dc. $+ $hget($1,modul.current) $+ .load)) { dc. $+ $hget($1,modul.current) $+ .load }
-    .noop $dbs(%framework.dbhash,active_moduls).setSection
-    .noop $dbs(%framework.dbhash,$hget($1,modul.current),1).setUserValue
+    .noop $dcDbs(%dc.fw.dbhash,active_moduls).setSection
+    .noop $dcDbs(%dc.fw.dbhash,$hget($1,modul.current),1).setUserValue
     return 1
   }
   else {
@@ -268,41 +268,41 @@ alias -l dcModul.loadModul {
 @return 1 oder 0
 */
 alias -l dcModul.unloadModul {
-  var %db $dbs(modul_ $+ $hget($1,modul.current))
+  var %db $dcDbs(modul_ $+ $hget($1,modul.current))
   if (%db) {
-    var %list $dbsList(%db,script,onRemote)
+    var %list $dcDbsList(%db,script,onRemote)
     if (%list) {
-      .noop $dbsList(%list).prepareWhile
-      .noop $dbs(%framework.dbhash,onRemote).setSection
-      while ($dbsList(%list).next) {
-        var %tmp $dbs(%framework.dbhash,$dbsList(%list).getItem).getUserValue
-        var %tmp $remtok(%tmp,$dbsList(%list).getValue,1,44)
+      .noop $dcDbsList(%list).prepareWhile
+      .noop $dcDbs(%dc.fw.dbhash,onRemote).setSection
+      while ($dcDbsList(%list).next) {
+        var %tmp $dcDbs(%dc.fw.dbhash,$dcDbsList(%list).getItem).getUserValue
+        var %tmp $remtok(%tmp,$dcDbsList(%list).getValue,1,44)
         if (%tmp != $null) {
-          .noop $dbs(%framework.dbhash,$dbsList(%list).getItem,%tmp).setUserValue
+          .noop $dcDbs(%dc.fw.dbhash,$dcDbsList(%list).getItem,%tmp).setUserValue
         }
         else {
-          .noop $dbs(%framework.dbhash,$dbsList(%list).getItem).deleteUserItem
+          .noop $dcDbs(%dc.fw.dbhash,$dcDbsList(%list).getItem).deleteUserItem
         }
       }
-      .noop $dbsList(%list).destroy
+      .noop $dcDbsList(%list).destroy
     }
 
-    var %section $dbs(%db,modul_config,configTree).getScriptValue
-    var %tree_db $dbs(fw_cfg_tree)
-    .noop $dbs(%tree_db,%section).deleteUserSection
-    .noop $dbs(%tree_db).destroy
+    var %section $dcDbs(%db,modul_config,configTree).getScriptValue
+    var %tree_db $dcDbs(fw_cfg_tree)
+    .noop $dcDbs(%tree_db,%section).deleteUserSection
+    .noop $dcDbs(%tree_db).destroy
 
-    var %fkey_db $dbs(fw_fkey)
-    var %section $dbs(%db,modul_config,fkey).getScriptvalue
-    .noop $dbs(%fkey_db,%section).deleteUserSection
-    .noop $dbs(%fkey_db,__groups__,%section).deleteUserItem
-    .noop $dbs(%fkey_db).destroy  
+    var %fkey_db $dcDbs(fw_fkey)
+    var %section $dcDbs(%db,modul_config,fkey).getScriptvalue
+    .noop $dcDbs(%fkey_db,%section).deleteUserSection
+    .noop $dcDbs(%fkey_db,__groups__,%section).deleteUserItem
+    .noop $dcDbs(%fkey_db).destroy  
 
-    .noop $dbs(%db).destroy
+    .noop $dcDbs(%db).destroy
     if ($isalias(dc. $+ $hget($1,modul.current) $+ .unload)) { dc. $+ $hget($1,modul.current) $+ .unload }
     .unload -nrs $nopath($hget($1,modul.file))
-    .noop $dbs(%framework.dbhash,active_moduls).setSection
-    .noop $dbs(%framework.dbhash,$hget($1,modul.current)).deleteUserItem
+    .noop $dcDbs(%dc.fw.dbhash,active_moduls).setSection
+    .noop $dcDbs(%dc.fw.dbhash,$hget($1,modul.current)).deleteUserItem
     return 1
   }
   else {
@@ -394,7 +394,7 @@ alias -l dcModulDialog.init {
 */
 alias -l dcModulDialog.destroy {
   .noop $dcModul($hget($1,modul.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -449,9 +449,9 @@ alias -l dcModulDialog.createControls {
 alias -l dcModulDialog.fillList {
   var %list $dcModul($hget($1,modul.obj)).getListObjekt
   .noop $dcModulList(%list).prepareWhile
-  .noop $dbs(%framework.dbhash,active_moduls).setSection
+  .noop $dcDbs(%dc.fw.dbhash,active_moduls).setSection
   while ($dcModulList(%list).next) {
-    if ($dbs(%framework.dbhash,$dcModulList(%list).getValue).getUserValue == 1) { var %icon 2 }
+    if ($dcDbs(%dc.fw.dbhash,$dcModulList(%list).getValue).getUserValue == 1) { var %icon 2 }
     else { var %icon 1 }
     xdid -a $hget($1,dialog.name) 2 $+($dcModulList(%list).getPos,$chr(9),+ %icon %icon 0 0 0 $rgb(0,0,255) $rgb(255,0,255) $dcModulList(%list).getValue,$chr(9),$dcModulList(%list).getValue)
   }
@@ -482,9 +482,9 @@ alias -l dcModulDialog.getModulInfo {
 * @return 1
 */
 alias -l dcModulDialog.toggleModul {
-  .noop $dbs(%framework.dbhash,active_moduls).setSection
+  .noop $dcDbs(%dc.fw.dbhash,active_moduls).setSection
   var %modul $xdid($hget($1,dialog.name),2).seltext
-  if ($dbs(%framework.dbhash,$xdid($hget($1,dialog.name),2).seltext).getUserValue == 1) {
+  if ($dcDbs(%dc.fw.dbhash,$xdid($hget($1,dialog.name),2).seltext).getUserValue == 1) {
     ;// Modul wird deaktiviert
     if ($dcModul($hget($1,modul.obj)).unloadModul) {
       xdid -j $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).selpath $chr(9) 1 1
@@ -505,7 +505,7 @@ alias -l dcModulDialog.toggleModul {
 * @param $1 dcConfig objekt
 */
 alias dc.frameworkScriptModule.createPanel {
-  set %fw.modul.obj $dcModulDialog($dcConfig($1,dialog.name).get)
+  set %dc.fw.modul.obj $dcModulDialog($dcConfig($1,dialog.name).get)
 
 }
 
@@ -513,7 +513,7 @@ alias dc.frameworkScriptModule.createPanel {
 * Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
 */
 alias dc.frameworkScriptModule.destroyPanel { 
-  .noop $dcModulDialog(%fw.modul.obj).destroy
+  .noop $dcModulDialog(%dc.fw.modul.obj).destroy
   return 1 
 }
 
@@ -526,6 +526,6 @@ alias dc.frameworkScriptModule.destroyPanel {
 * @param $4 sonstiges
 */
 alias dc.frameworkScriptModule.events { 
-  if ($2 == sclick && $3 == 2) { .noop $dcModulDialog(%fw.modul.obj).getModulInfo }
-  if ($2 == dclick && $3 == 2) { .noop $dcModulDialog(%fw.modul.obj).toggleModul }
+  if ($2 == sclick && $3 == 2) { .noop $dcModulDialog(%dc.fw.modul.obj).getModulInfo }
+  if ($2 == dclick && $3 == 2) { .noop $dcModulDialog(%dc.fw.modul.obj).toggleModul }
 }

@@ -15,7 +15,7 @@
 */
 alias dcAcro {
   var %this = dcAcro           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -47,7 +47,7 @@ alias dcAcro {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcAcro.init(%x,$1)
 
   :destroy
@@ -92,12 +92,12 @@ alias dcAcro {
 * Erzeugt ein Acro-Objekt
 *
 * @param $1 dcAcro objekt
-* @param $2 dbs objekt (optional)
+* @param $2 dcDbs objekt (optional)
 * @return dcAcro objekt
 */
 alias -l dcAcro.init {
   if ($2 == $null || $hget($2,database) != modul_acro) { 
-    var %db $dbs(modul_acro)
+    var %db $dcDbs(modul_acro)
     hadd %db createDB 1
   }
   else {
@@ -106,26 +106,26 @@ alias -l dcAcro.init {
   }
   hadd $1 dbhash %db
 
-  .noop $dbs(%db,config).setSection
-  var %acro.c1 $dbs(%db,c1).getUserValue
-  var %acro.c2 $dbs(%db,c2).getUserValue
-  var %acro.lu $dbs(%db,list_user).getUserValue
-  var %acro.ls $dbs(%db,list_script).getUserValue
-  if (%acro.c1 == $null) { var %acro.c1 $dbs(%db,c1).getscriptValue }
-  if (%acro.c2 == $null) { var %acro.c2 $dbs(%db,c2).getscriptValue }
-  if (%acro.ls == $null) { var %acro.ls $dbs(%db,list_script).getscriptValue }
-  if (%acro.lu == $null) { var %acro.lu $dbs(%db,list_user).getscriptValue }
+  .noop $dcDbs(%db,config).setSection
+  var %acro.c1 $dcDbs(%db,c1).getUserValue
+  var %acro.c2 $dcDbs(%db,c2).getUserValue
+  var %acro.lu $dcDbs(%db,list_user).getUserValue
+  var %acro.ls $dcDbs(%db,list_script).getUserValue
+  if (%acro.c1 == $null) { var %acro.c1 $dcDbs(%db,c1).getscriptValue }
+  if (%acro.c2 == $null) { var %acro.c2 $dcDbs(%db,c2).getscriptValue }
+  if (%acro.ls == $null) { var %acro.ls $dcDbs(%db,list_script).getscriptValue }
+  if (%acro.lu == $null) { var %acro.lu $dcDbs(%db,list_user).getscriptValue }
 
   hadd $1 c1 $iif(%acro.c1 < 10,0) $+ %acro.c1
   hadd $1 c2 $iif(%acro.c2 < 10,0) $+ %acro.c2
   hadd $1 list_user %acro.lu
   hadd $1 list_script %acro.ls
-  hadd $1 dbslist_user $dbsList(%db,user,list)
-  hadd $1 dbslist_script $dbsList(%db,script,list)
+  hadd $1 dcDbslist_user $dcDbsList(%db,user,list)
+  hadd $1 dcDbslist_script $dcDbsList(%db,script,list)
   hadd $1 limit_vars c1,c2,list_user,list_script,auto_style
   hadd $1 error $dcError()
   hadd $1 auto_style 0
-  .noop $dbs(%db).setSection
+  .noop $dcDbs(%db).setSection
 
   return $1
 }
@@ -137,13 +137,13 @@ alias -l dcAcro.init {
 * @return 1
 */
 alias -l dcAcro.destroy {
-  .noop $dbsList($hget($1,dbslist_user)).destroy
-  .noop $dbsList($hget($1,dbslist_script)).destroy
+  .noop $dcDbsList($hget($1,dcDbslist_user)).destroy
+  .noop $dcDbsList($hget($1,dcDbslist_script)).destroy
   .noop $dcError($hget($1,error)).destroy
   if ($hget($1,createDB) == 1) {
-    .noop $dbs($hget($1,dbhash)).destroy
+    .noop $dcDbs($hget($1,dbhash)).destroy
   }
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -153,25 +153,25 @@ alias -l dcAcro.destroy {
 * @return 1
 */
 alias -l dcAcro.writeConfig {
-  .noop $dbs($hget($1,dbhash),config).setSection
-  .noop $dbs($hget($1,dbhash),c1,$hget($1,c1)).setUserValue
-  .noop $dbs($hget($1,dbhash),c2,$hget($1,c2)).setUserValue
-  .noop $dbs($hget($1,dbhash),list_user,$hget($1,list_user)).setUserValue
-  .noop $dbs($hget($1,dbhash),list_script,$hget($1,list_script)).setUserValue
-  .noop $dbs($hget($1,dbhash)).setSection
+  .noop $dcDbs($hget($1,dbhash),config).setSection
+  .noop $dcDbs($hget($1,dbhash),c1,$hget($1,c1)).setUserValue
+  .noop $dcDbs($hget($1,dbhash),c2,$hget($1,c2)).setUserValue
+  .noop $dcDbs($hget($1,dbhash),list_user,$hget($1,list_user)).setUserValue
+  .noop $dcDbs($hget($1,dbhash),list_script,$hget($1,list_script)).setUserValue
+  .noop $dcDbs($hget($1,dbhash)).setSection
   return 1
 }
 
 /*
-* gibt ein dbsList Objekt zurück
+* gibt ein dcDbsList Objekt zurück
 *
 * @param $1 dcAcro objekt
 * @param $2 Benutzer (user) oder Vorgaben (script) Liste
-* @return dbsList objekt oder 0
+* @return dcDbsList objekt oder 0
 */
 alias -l dcAcro.getListObject {
   if ($2 == user || $2 == script) {
-    return $hget($1,dbslist_ $+ $2)
+    return $hget($1,dcDbslist_ $+ $2)
   }
   else {
     return 0
@@ -188,7 +188,7 @@ alias -l dcAcro.getListObject {
 * @return 1 oder 0
 */
 alias -l dcAcro.checkAcro {
-  .noop $dbs($hget($1,dbhash),list).setSection
+  .noop $dcDbs($hget($1,dbhash),list).setSection
   .noop $dcError($hget($1,error)).clear
 
   if ($3 == $null) {
@@ -198,8 +198,8 @@ alias -l dcAcro.checkAcro {
     .noop $dcError($hget($1,error),Kürzel darf keine Leerzeichen enthalten).add
   }
   else {
-    if (($2 == 0 && $dbs($hget($1,dbhash),$3).getUserValue != $null) || $&
-      ($2 > 0 && $dbs($hget($1,dbhash),$3).getUserItem != $2)) {
+    if (($2 == 0 && $dcDbs($hget($1,dbhash),$3).getUserValue != $null) || $&
+      ($2 > 0 && $dcDbs($hget($1,dbhash),$3).getUserItem != $2)) {
       .noop $dcError($hget($1,error),Kürzel darf nur einmal vorkommen).add
     }
   }
@@ -230,11 +230,11 @@ alias -l dcAcro.checkAcro {
 alias -l dcAcro.newAcro {
   if ($dcAcro($1,0,$2,$3-).checkAcro) {
     .noop $dcAcro($1,$2,$3-).saveAcro
-    if ($hget($1,dbslist_user) == 0) {
-      hadd $1 dbslist_user $dbsList($hget($1,dbhash),user,list)
+    if ($hget($1,dcDbslist_user) == 0) {
+      hadd $1 dcDbslist_user $dcDbsList($hget($1,dbhash),user,list)
     }
     else {
-      hinc $hget($1,dbslist_user) last  
+      hinc $hget($1,dcDbslist_user) last  
     }
     return 1
   }
@@ -271,12 +271,12 @@ alias -l dcAcro.editAcro {
 * @return 1
 */
 alias -l dcAcro.saveAcro {
-  .noop $dbs($hget($1,dbhash),list).setSection
+  .noop $dcDbs($hget($1,dbhash),list).setSection
   if ($hget($1,auto_style) == 1) {
-    .noop $dbs($hget($1,dbhash),$2,$formatEncode($dcAcro($1,$3-).applyDefaultStyle)).setUserValue
+    .noop $dcDbs($hget($1,dbhash),$2,$formatEncode($dcAcro($1,$3-).applyDefaultStyle)).setUserValue
   }
   else {
-    .noop $dbs($hget($1,dbhash),$2,$formatEncode($3-)).setUserValue
+    .noop $dcDbs($hget($1,dbhash),$2,$formatEncode($3-)).setUserValue
   }
   return 1
 }
@@ -308,10 +308,10 @@ alias -l dcAcro.applyDefaultStyle {
 * @return 1 oder 0
 */
 alias -l dcAcro.delAcro {
-  .noop $dbs($hget($1,dbhash),list).setSection
-  if ($dbs($hget($1,dbhash),$2).getUserValue != $null) {
-    .noop $dbs($hget($1,dbhash),$2).deleteUserItem
-    hdec $hget($1,dbslist_user) last
+  .noop $dcDbs($hget($1,dbhash),list).setSection
+  if ($dcDbs($hget($1,dbhash),$2).getUserValue != $null) {
+    .noop $dcDbs($hget($1,dbhash),$2).deleteUserItem
+    hdec $hget($1,dcDbslist_user) last
     return 1
   }
   else {
@@ -337,11 +337,11 @@ alias -l dcAcro.applyColorSettings {
 * @return 1
 */
 alias -l dcAcro.loadDefaults {
-  .noop $dbs($hget($1,dbhash),config).setSection
-  hadd $1 c1 $dbs($hget($1,dbhash),c1).getScriptValue
-  hadd $1 c2 $dbs($hget($1,dbhash),c2).getScriptValue
-  hadd $1 list_user $dbs($hget($1,dbhash),list_user).getScriptValue
-  hadd $1 list_script $dbs($hget($1,dbhash),script).getScriptValue
+  .noop $dcDbs($hget($1,dbhash),config).setSection
+  hadd $1 c1 $dcDbs($hget($1,dbhash),c1).getScriptValue
+  hadd $1 c2 $dcDbs($hget($1,dbhash),c2).getScriptValue
+  hadd $1 list_user $dcDbs($hget($1,dbhash),list_user).getScriptValue
+  hadd $1 list_script $dcDbs($hget($1,dbhash),script).getScriptValue
   return 1
 }
 
@@ -479,7 +479,7 @@ alias -l dcAcroDialog.init {
 */
 alias -l dcAcroDialog.destroy {
   .noop $dcAcro($hget($1,acro.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -631,9 +631,9 @@ alias -l dcAcroDialog.fillAcroList {
   var %acro.listhash $dcAcro($hget($1,acro.obj),$hget($1,active.list)).getListObject
   hadd $1 acro.listhash %acro.listhash
   if (%acro.listhash) {
-    .noop $dbsList(%acro.listhash).prepareWhile
-    while ($dbsList(%acro.listhash).next) {
-      .noop $dcAcroDialog.addUserListEntry($1,$dbsList(%acro.listhash).getItem,$formatDecode($dbsList(%acro.listhash).getValue))      
+    .noop $dcDbsList(%acro.listhash).prepareWhile
+    while ($dcDbsList(%acro.listhash).next) {
+      .noop $dcAcroDialog.addUserListEntry($1,$dcDbsList(%acro.listhash).getItem,$formatDecode($dcDbsList(%acro.listhash).getValue))      
     }
   }
   return 1
@@ -689,9 +689,9 @@ alias -l dcAcroDialog.changeToolbar {
 alias -l dcAcroDialog.fillAcroEditControls {
   .noop $dcDialog($1,9-10,12).clearControls
   var %tmp $xdid($hget($1,dialog.name),8,$xdid($hget($1,dialog.name),8).sel).text
-  .noop $dbsList($hget($1,acro.listhash),$xdid($hget($1,dialog.name),8).sel).setPos
+  .noop $dcDbsList($hget($1,acro.listhash),$xdid($hget($1,dialog.name),8).sel).setPos
   xdid -a $hget($1,dialog.name) 9 $gettok(%tmp,1,32)
-  xdid -a $hget($1,dialog.name) 10 $formatDecode($dbsList($hget($1,acro.listhash)).getValue)
+  xdid -a $hget($1,dialog.name) 10 $formatDecode($dcDbsList($hget($1,acro.listhash)).getValue)
   xdid -a $hget($1,dialog.name) 12 $gettok(%tmp,3-,32)
   return 1
 }
@@ -863,15 +863,15 @@ alias -l dcAcroDialog.loadDefaults {
 * @param $1 dcConfig objekt
 */
 alias dc.acro.createPanel {
-  set %acro.dialog.obj $dcAcroDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
+  set %dc.acro.dialog.obj $dcAcroDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
 }
 
 /*
 * Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
 */
 alias dc.acro.destroyPanel {
-  .noop $dcAcroDialog(%acro.dialog.obj).destroy
-  unset %acro.*
+  .noop $dcAcroDialog(%dc.acro.dialog.obj).destroy
+  unset %dc.acro.*
   dc.acro.initGlobalAcroList
 }
 
@@ -885,26 +885,26 @@ alias dc.acro.destroyPanel {
 */
 alias dc.acro.events { 
   if ($2 == sclick) {
-    if ($3 == 6) { .noop $dcAcroDialog(%acro.dialog.obj,script).changeAcroList }
-    elseif ($3 == 7) { .noop $dcAcroDialog(%acro.dialog.obj,user).changeAcroList }
-    elseif ($3 == 8) { .noop $dcAcroDialog(%acro.dialog.obj).selectAcro }
+    if ($3 == 6) { .noop $dcAcroDialog(%dc.acro.dialog.obj,script).changeAcroList }
+    elseif ($3 == 7) { .noop $dcAcroDialog(%dc.acro.dialog.obj,user).changeAcroList }
+    elseif ($3 == 8) { .noop $dcAcroDialog(%dc.acro.dialog.obj).selectAcro }
     elseif ($3 == 75) {
-      if ($4 == 1) { .noop $dcAcroDialog(%acro.dialog.obj).saveAcro }
-      elseif ($4 == 2) { .noop $dcAcroDialog(%acro.dialog.obj).newAcro }
-      elseif ($4 == 3) { .noop $dcAcroDialog(%acro.dialog.obj).editAcro }
-      elseif ($4 == 4) { .noop $dcAcroDialog(%acro.dialog.obj).delAcro }
+      if ($4 == 1) { .noop $dcAcroDialog(%dc.acro.dialog.obj).saveAcro }
+      elseif ($4 == 2) { .noop $dcAcroDialog(%dc.acro.dialog.obj).newAcro }
+      elseif ($4 == 3) { .noop $dcAcroDialog(%dc.acro.dialog.obj).editAcro }
+      elseif ($4 == 4) { .noop $dcAcroDialog(%dc.acro.dialog.obj).delAcro }
     }
-    elseif ($3 == 11) { .noop $dcAcroDialog(%acro.dialog.obj).setAutoStyle }
-    elseif ($3 == 80) { .noop $dcAcroDialog(%acro.dialog.obj).saveConfig }
+    elseif ($3 == 11) { .noop $dcAcroDialog(%dc.acro.dialog.obj).setAutoStyle }
+    elseif ($3 == 80) { .noop $dcAcroDialog(%dc.acro.dialog.obj).saveConfig }
   }
-  elseif ($2 == keyup && $3 == 10) { .noop $dcAcroDialog(%acro.dialog.obj).setPreview }
+  elseif ($2 == keyup && $3 == 10) { .noop $dcAcroDialog(%dc.acro.dialog.obj).setPreview }
 }
 
 /*
 * Lädt die Standard Einstellung
 */
 alias dc.acro.loadDefaults {
-  .noop $dcAcroDialog(%acro.dialog.obj).loadDefaults
+  .noop $dcAcroDialog(%dc.acro.dialog.obj).loadDefaults
 }
 
 /*
@@ -915,16 +915,16 @@ alias dc.acro.initGlobalAcroList {
   hmake acrolist 100
   var %acro $dcAcro()
   if ($dcAcro(%acro,list_script).get == 1) {
-    .noop $dbsList($dcAcro(%acro,script).getListObject).prepareWhile
-    while ($dbsList($dcAcro(%acro,script).getListObject).next) {
-      hadd acrolist $dbsList($dcAcro(%acro,script).getListObject).getItem $dcAcro(%acro,$formatDecode($dbsList($dcAcro(%acro,script).getListObject).getValue)).applyColorSettings
+    .noop $dcDbsList($dcAcro(%acro,script).getListObject).prepareWhile
+    while ($dcDbsList($dcAcro(%acro,script).getListObject).next) {
+      hadd acrolist $dcDbsList($dcAcro(%acro,script).getListObject).getItem $dcAcro(%acro,$formatDecode($dcDbsList($dcAcro(%acro,script).getListObject).getValue)).applyColorSettings
     }
   }
 
   if ($dcAcro(%acro,list_user).get == 1) {
-    .noop $dbsList($dcAcro(%acro,user).getListObject).prepareWhile
-    while ($dbsList($dcAcro(%acro,user).getListObject).next) {
-      hadd acrolist $dbsList($dcAcro(%acro,user).getListObject).getItem $dcAcro(%acro,$formatDecode($dbsList($dcAcro(%acro,user).getListObject).getValue)).applyColorSettings
+    .noop $dcDbsList($dcAcro(%acro,user).getListObject).prepareWhile
+    while ($dcDbsList($dcAcro(%acro,user).getListObject).next) {
+      hadd acrolist $dcDbsList($dcAcro(%acro,user).getListObject).getItem $dcAcro(%acro,$formatDecode($dcDbsList($dcAcro(%acro,user).getListObject).getValue)).applyColorSettings
     }
   }
   .noop $dcAcro(%acro).destroy

@@ -11,11 +11,11 @@
 * Class Alias
 * var %var $fkeyList
 *
-* param $1 dbs objekt
+* param $1 dcDbs objekt
 */
 alias dcFkeyList {
   var %this = dcFkeyList           | ; Name of Object (Alias name)
-  var %base = BaseListClass        | ; Name of BaseClass, $null for none  
+  var %base = dcList        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -47,7 +47,7 @@ alias dcFkeyList {
   */
 
   :init
-  var %x $baseListClass(%this,%base).init
+  var %x $dcList(%this,%base).init
   return $dcFkeyList.init(%x,$1)
 
   :isDisabled
@@ -76,13 +76,13 @@ alias dcFkeyList {
 * Initialisiert die Liste
 *
 * @param $1 dcFkeyList objekt
-* @param $2 dbs objekt
+* @param $2 dcDbs objekt
 * @return dcFkeyList objekt
 */
 alias -l dcFkeyList.init {
   hadd $1 pos 1
   hadd $1 last 36
-  hadd $1 list $dbsList($2,user,__key_assignments__)
+  hadd $1 list $dcDbsList($2,user,__key_assignments__)
   hadd $1 dbhash $2
   hadd $1 getdata 1
   .noop $dcFkeyList.getData($1)
@@ -96,8 +96,8 @@ alias -l dcFkeyList.init {
 * @return 1
 */
 alias -l dcFkeyList.destroy {
-  .noop $dbsList($hget($1,list)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcDbsList($hget($1,list)).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -108,22 +108,22 @@ alias -l dcFkeyList.destroy {
 * @return 1
 */
 alias dcFkeyList.getData {
-  .noop $dbsList($hget($1,list),$hget($1,pos)).setPos
-  hadd $1 current_item $dbsList($hget($1,list)).getItem
-  var %tmp $dbsList($hget($1,list)).getValue
+  .noop $dcDbsList($hget($1,list),$hget($1,pos)).setPos
+  hadd $1 current_item $dcDbsList($hget($1,list)).getItem
+  var %tmp $dcDbsList($hget($1,list)).getValue
   hadd $1 current_value %tmp
   if (%tmp == 0) {
     hadd $1 isSet 0
-    ;hadd $1 isDisabled $dcFkeyList($1,$dbsList($hget($1,list)).getItem).isDisabled
-    hadd $1 isDisabled $iif($dbs($hget($1,dbhash),__disabled__,$dbsList($hget($1,list)).getItem).getScriptValue != $null,1,0)
-    hadd $1 fkey $dbsList($hget($1,list)).getItem
+    ;hadd $1 isDisabled $dcFkeyList($1,$dcDbsList($hget($1,list)).getItem).isDisabled
+    hadd $1 isDisabled $iif($dcDbs($hget($1,dbhash),__disabled__,$dcDbsList($hget($1,list)).getItem).getScriptValue != $null,1,0)
+    hadd $1 fkey $dcDbsList($hget($1,list)).getItem
     hadd $1 group $null
     hadd $1 command $null
     hadd $1 command_line $null
   }
   else {
     hadd $1 isSet 1
-    hadd $1 fkey $dbsList($hget($1,list)).getItem
+    hadd $1 fkey $dcDbsList($hget($1,list)).getItem
     hadd $1 group $gettok(%tmp,1,44)
     if ($gettok(%tmp,1,44) == __user__) {
       hadd $1 group Benutzer
@@ -132,10 +132,10 @@ alias dcFkeyList.getData {
     }
     else {
       if ($left($gettok(%tmp,2,44),1) == s) {
-        var %cmd_tmp $dbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getScriptValue
+        var %cmd_tmp $dcDbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getScriptValue
       }
       else {
-        var %cmd_tmp $dbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getUserValue
+        var %cmd_tmp $dcDbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getUserValue
       }
       hadd $1 command $gettok(%cmd_tmp,1,44)
       hadd $1 command_line $gettok(%cmd_tmp,2,44)
@@ -153,7 +153,7 @@ alias dcFkeyList.getData {
 * @return 1 (deaktiviert) oder 0 (aktiv)
 */
 alias -l dcFkeyList.isDisabled {
-  if ($dbs($hget($1,dbhash),__disabled__,$2).getScriptValue != $null) {
+  if ($dcDbs($hget($1,dbhash),__disabled__,$2).getScriptValue != $null) {
     return 1
   }
   else {
@@ -169,7 +169,7 @@ alias -l dcFkeyList.isDisabled {
 */
 alias dcFkey {
   var %this = dcFkey           | ; Name of Object (Alias name)
-  var %base = BaseClass        | ; Name of BaseClass, $null for none  
+  var %base = dcBase        | ; Name of BaseClass, $null for none  
 
   /*
   * Start of data parsing
@@ -201,7 +201,7 @@ alias dcFkey {
   */
 
   :init
-  var %x $baseClass(%this,%base).init
+  var %x $dcBase(%this,%base).init
   return $dcFkey.init(%x,$1)
 
   :destroy
@@ -237,12 +237,12 @@ alias dcFkey {
 * Initialisiert ein dcFkey objekt
 *
 * @param $1 dcFkey objekt
-* @param $2 dbs objekt
+* @param $2 dcDbs objekt
 * @return dcFkey objekt
 */
 alias -l dcFkey.init {
   if ($2 == $null || $hget($2,database) != fw_fkey) { 
-    var %db $dbs(fw_fkey)
+    var %db $dcDbs(fw_fkey)
     hadd %db createDB 1
   }
   else {
@@ -254,8 +254,8 @@ alias -l dcFkey.init {
   .noop $dcFkey($1).createUserList
 
   hadd $1 fkeylist $dcFkeyList(%db)
-  hadd $1 grouplist $baseListClass
-  hadd $1 commandlist $baseListClass
+  hadd $1 grouplist $dcList
+  hadd $1 commandlist $dcList
   hadd $1 error.obj $dcError
 
   .noop $dcFkey($1).getGroups
@@ -273,13 +273,13 @@ alias -l dcFkey.init {
 */
 alias -l dcFkey.destroy {
   if ($hget($1,createDB) == 1) {
-    .noop $dbs($hget($1,dbhash)).destroy
+    .noop $dcDbs($hget($1,dbhash)).destroy
   }
   .noop $dcFkeyList($hget($1,fkeylist)).destroy
-  .noop $baseListClass($hget($1,grouplist)).destroy
-  .noop $baseListClass($hget($1,commandlist)).destroy
-  .noop $baseListClass($hget($1,error.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcList($hget($1,grouplist)).destroy
+  .noop $dcList($hget($1,commandlist)).destroy
+  .noop $dcList($hget($1,error.obj)).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -290,14 +290,14 @@ alias -l dcFkey.destroy {
 * @return 1
 */
 alias -l dcFkey.createUserList {
-  if (!$dbsList($hget($1,dbhash),user,__key_assignments__)) {
-    var %list $dbsList($hget($1,dbhash),script,__key_assignments__)
-    .noop $dbsList(%list).prepareWhile
-    .noop $dbs($hget($1,dbhash),__key_assignments__).setSection
-    while ($dbsList(%list).next) {
-      .noop $dbs($hget($1,dbhash),$dbsList(%list).getItem,$dbsList(%list).getValue).setUserValue
+  if (!$dcDbsList($hget($1,dbhash),user,__key_assignments__)) {
+    var %list $dcDbsList($hget($1,dbhash),script,__key_assignments__)
+    .noop $dcDbsList(%list).prepareWhile
+    .noop $dcDbs($hget($1,dbhash),__key_assignments__).setSection
+    while ($dcDbsList(%list).next) {
+      .noop $dcDbs($hget($1,dbhash),$dcDbsList(%list).getItem,$dcDbsList(%list).getValue).setUserValue
     }
-    .noop $dbsList(%list).destroy
+    .noop $dcDbsList(%list).destroy
   }
   
   return 1
@@ -310,21 +310,21 @@ alias -l dcFkey.createUserList {
 * @return 1
 */
 alias -l dcFkey.getGroups {
-  var %list $dbsList($hget($1,dbhash),script,__groups__)
+  var %list $dcDbsList($hget($1,dbhash),script,__groups__)
   if (%list) {
-    .noop $dbsList(%list).prepareWhile
-    while ($dbsList(%list).next) {
-      .noop $baseListClass($hget($1,grouplist),$dbsList(%list).getItem $+ $chr(44) $+ script).addLastElement
+    .noop $dcDbsList(%list).prepareWhile
+    while ($dcDbsList(%list).next) {
+      .noop $dcList($hget($1,grouplist),$dcDbsList(%list).getItem $+ $chr(44) $+ script).addLastElement
     }
-    .noop $dbsList(%list).destroy
+    .noop $dcDbsList(%list).destroy
   }
-  var %list $dbsList($hget($1,dbhash),user,__groups__)
+  var %list $dcDbsList($hget($1,dbhash),user,__groups__)
   if (%list) {
-    .noop $dbsList(%list).prepareWhile
-    while ($dbsList(%list).next) {
-      .noop $baseListClass($hget($1,grouplist),$dbsList(%list).getItem $+ $chr(44) $+ user).addLastElement
+    .noop $dcDbsList(%list).prepareWhile
+    while ($dcDbsList(%list).next) {
+      .noop $dcList($hget($1,grouplist),$dcDbsList(%list).getItem $+ $chr(44) $+ user).addLastElement
     }
-    .noop $dbsList(%list).destroy
+    .noop $dcDbsList(%list).destroy
   }
   return 1
 }
@@ -337,14 +337,14 @@ alias -l dcFkey.getGroups {
 * @return 1
 */
 alias -l dcFkey.getGroupCommands {
-  .noop $baseListClass($hget($1,commandlist)).clear
+  .noop $dcList($hget($1,commandlist)).clear
   var %find $hfind($hget($1,grouplist),$2*,1,w).data
-  var %list $dbsList($hget($1,dbhash),$gettok($hget($hget($1,grouplist),%find),2,44),$2)
-  .noop $dbsList(%list).prepareWhile
-  while ($dbsList(%list).next) {
-    .noop $baseListClass($hget($1,commandlist),$gettok($dbsList(%list).getValue,1,44)).addLastElement
+  var %list $dcDbsList($hget($1,dbhash),$gettok($hget($hget($1,grouplist),%find),2,44),$2)
+  .noop $dcDbsList(%list).prepareWhile
+  while ($dcDbsList(%list).next) {
+    .noop $dcList($hget($1,commandlist),$gettok($dcDbsList(%list).getValue,1,44)).addLastElement
   }
-  .noop $dbsList(%list).destroy
+  .noop $dcDbsList(%list).destroy
   return 1
 }
 
@@ -360,7 +360,7 @@ alias -l dcFkey.getGroupCommands {
 alias -l dcFkey.saveKeyScript {
   var %group $gettok($hget($hget($1,grouplist),n $+ $3),1,44)
   var %id $left($gettok($hget($hget($1,grouplist),n $+ $3),2,44),1) $+ $4
-  .noop $dbs($hget($1,dbhash),__key_assignments__,$2,%group $+ $chr(44) $+ %id).setUserValue
+  .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,%group $+ $chr(44) $+ %id).setUserValue
   return 1
 }
 
@@ -382,7 +382,7 @@ alias -l dcFkey.saveKeyUser {
     return 0
   }
   else {
-    .noop $dbs($hget($1,dbhash),__key_assignments__,$2,__user__ $+ $chr(44) $+ u0 $+ $chr(44) $+ $3-).setUserValue
+    .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,__user__ $+ $chr(44) $+ u0 $+ $chr(44) $+ $3-).setUserValue
     return 1
   }
 }
@@ -394,7 +394,7 @@ alias -l dcFkey.saveKeyUser {
 * @return 1
 */
 alias -l dcfkey.delKey {
-  .noop $dbs($hget($1,dbhash),__key_assignments__,$2,0).setUserValue
+  .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,0).setUserValue
   return 1
 }
 
@@ -406,7 +406,7 @@ alias -l dcfkey.delKey {
 * @return Befehlszeile
 */
 alias -l dcFkey.evalKey {
-  var %keynr $dbs($hget($1,dbhash),__key_assignments__,$2).getUserItem
+  var %keynr $dcDbs($hget($1,dbhash),__key_assignments__,$2).getUserItem
   .noop $dcFkeyList($hget($1,fkeylist),%keynr).setPos
   return $dcFkeyList($hget($1,fkeylist)).command_line
 }
@@ -494,7 +494,7 @@ alias dcFkeyDialog {
 *
 * @param $1 dcFkeydialog objekt
 * @param $2 dialog name
-* @param $3 dbs objekt
+* @param $3 dcDbs objekt
 * @return dcFkeyDialog objekt
 */
 alias -l dcFkeyDialog.init {
@@ -518,7 +518,7 @@ alias -l dcFkeyDialog.init {
 */
 alias -l dcFkeyDialog.destroy {
   .noop $dcFkey($hget($1,fkey.obj)).destroy
-  .noop $baseClass($1).destroy
+  .noop $dcBase($1).destroy
   return 1
 }
 
@@ -596,9 +596,9 @@ alias -l dcFkeyDialog.fillFkeyList {
 */
 alias -l dcFkeyDialog.fillGroupList {
   var %list $dcFkey($hget($1,fkey.obj),grouplist).get
-  .noop $baseListClass(%list).prepareWhile
-  while ($baseListClass(%list).next) {
-    xdid -a $hget($1,dialog.name) 3 0 0 0 0 0 $gettok($baseListClass(%list).getValue,1,44)
+  .noop $dcList(%list).prepareWhile
+  while ($dcList(%list).next) {
+    xdid -a $hget($1,dialog.name) 3 0 0 0 0 0 $gettok($dcList(%list).getValue,1,44)
   }
   return 1
 }
@@ -614,11 +614,11 @@ alias -l dcfkeyDialog.fillGroupCommands {
   xdid -r $hget($1,dialog.name) 4
   .noop $dcFkey($hget($1,fkey.obj),$xdid($hget($1,dialog.name),3).seltext).getGroupCommands
   var %list $dcFkey($hget($1,fkey.obj),commandlist).get
-  .noop $baseListClass(%list).prepareWhile
-  while ($baseListClass(%list).next) {
-    xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $baseListClass(%list).getValue
-    if ($baseListClass(%list).getValue == $xdid($hget($1,dialog.name),2,3).seltext) {
-      xdid -c $hget($1,dialog.name) 4 $baseListClass(%list).getPos
+  .noop $dcList(%list).prepareWhile
+  while ($dcList(%list).next) {
+    xdid -a $hget($1,dialog.name) 4 0 0 0 0 0 $dcList(%list).getValue
+    if ($dcList(%list).getValue == $xdid($hget($1,dialog.name),2,3).seltext) {
+      xdid -c $hget($1,dialog.name) 4 $dcList(%list).getPos
     }
   }
 }
@@ -640,9 +640,9 @@ alias -l dcFKeyDialog.sclickFKeyList {
     .noop $dcFkeyDialog($1).changeInputUser
     .noop $dcDialog($1,5-6,).enableControls
 
-    var %item $dbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2,1).sel).getUserItem
+    var %item $dcDbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2,1).sel).getUserItem
 
-    xdid -a $hget($1,dialog.name) 7 $gettok($dbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,%item).getUserValue,3,44)
+    xdid -a $hget($1,dialog.name) 7 $gettok($dcDbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,%item).getUserValue,3,44)
   }
   else {
     .noop $dcFkeyDialog($1).changeInputScript
@@ -695,7 +695,7 @@ alias -l dcFkeyDialog.changeInputUser {
 * @return 1 oder 0
 */
 alias -l dcFkeyDialog.saveKey {
-  var %key $dbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getUserItem
+  var %key $dcDbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getUserItem
   if ($xdid($hget($1,dialog.name),10).state == 1) {
     if ($dcfkey($hget($1,fkey.obj),%key,$xdid($hget($1,dialog.name),3).sel,$xdid($hget($1,dialog.name),4).sel).saveKeyScript) {
       var %list $dcFkey($hget($1,fkey.obj),fkeylist).get
@@ -751,7 +751,7 @@ alias -l dcfkeyDialog.editUserBox {
 * @return 1
 */
 alias -l dcFkeyDialog.delKey {
-  var %key $dbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getUserItem
+  var %key $dcDbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getUserItem
   .noop $dcFkey($hget($1,fkey.obj),%key).delKey
   xdid -v $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).sel 2 
   xdid -v $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).sel 3 
@@ -767,15 +767,15 @@ alias -l dcFkeyDialog.delKey {
 * @param $1 dcConfig objekt
 */
 alias dc.frameworkFkey.createPanel {
-  set %fkey.dialog.obj $dcfkeyDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
+  set %dc.fkey.dialog.obj $dcfkeyDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
 }
 
 /*
 * Zu erledigende Aufgaben wenn das Panel zerstört
 */
 alias dc.frameworkFkey.destroyPanel {
-  .noop $dcFkeyDialog(%fkey.dialog.obj).destroy
-  unset %fkey.dialog.obj
+  .noop $dcFkeyDialog(%dc.fkey.dialog.obj).destroy
+  unset %dc.fkey.dialog.obj
 }
 
 /*
@@ -788,54 +788,54 @@ alias dc.frameworkFkey.destroyPanel {
 */
 alias dc.frameworkFkey.events {
   if ($2 == sclick) {
-    if ($3 == 2) { .noop $dcFKeyDialog(%fkey.dialog.obj).sclickFKeyList }
-    if ($3 == 3) { .noop $dcFKeyDialog(%fkey.dialog.obj).fillGroupCommands }
+    if ($3 == 2) { .noop $dcFKeyDialog(%dc.fkey.dialog.obj).sclickFKeyList }
+    if ($3 == 3) { .noop $dcFKeyDialog(%dc.fkey.dialog.obj).fillGroupCommands }
     if ($3 == 4) { xdid -e $1 5 }
-    if ($3 == 5) { .noop $dcFKeyDialog(%fkey.dialog.obj).saveKey }
-    if ($3 == 6) { .noop  $dcFkeyDialog(%fkey.dialog.obj).delKey }
-    if ($3 == 10) { .noop $dcFkeyDialog(%fkey.dialog.obj).changeInputScript }
-    if ($3 == 11) { .noop $dcFkeyDialog(%fkey.dialog.obj).changeInputUser }
+    if ($3 == 5) { .noop $dcFKeyDialog(%dc.fkey.dialog.obj).saveKey }
+    if ($3 == 6) { .noop  $dcFkeyDialog(%dc.fkey.dialog.obj).delKey }
+    if ($3 == 10) { .noop $dcFkeyDialog(%dc.fkey.dialog.obj).changeInputScript }
+    if ($3 == 11) { .noop $dcFkeyDialog(%dc.fkey.dialog.obj).changeInputUser }
   }
   elseif ($2 == edit) {
-    if ($3 == 7) { .noop $dcfkeyDialog(%fkey.dialog.obj).editUserBox }
+    if ($3 == 7) { .noop $dcfkeyDialog(%dc.fkey.dialog.obj).editUserBox }
   }
 }
 
-;alias f1 { $dcFkey.evalKey(%fkey.obj,f1) }
-alias f2 { $dcFkey.evalKey(%fkey.obj,f2) }
-alias f3 { $dcFkey.evalKey(%fkey.obj,f3) }
-alias f4 { $dcFkey.evalKey(%fkey.obj,f4) }
-alias f5 { $dcFkey.evalKey(%fkey.obj,f5) }
-alias f6 { $dcFkey.evalKey(%fkey.obj,f6) }
-alias f7 { $dcFkey.evalKey(%fkey.obj,f7) }
-alias f8 { $dcFkey.evalKey(%fkey.obj,f8) }
-alias f9 { $dcFkey.evalKey(%fkey.obj,f9) }
-alias f10 { $dcFkey.evalKey(%fkey.obj,f10) }
-;alias f11 { $dcFkey.evalKey(%fkey.obj,f11) }
-alias f12 { $dcFkey.evalKey(%fkey.obj,f12) }
+;alias f1 { $dcFkey.evalKey(%dc.fkey.obj,f1) }
+alias f2 { $dcFkey.evalKey(%dc.fkey.obj,f2) }
+alias f3 { $dcFkey.evalKey(%dc.fkey.obj,f3) }
+alias f4 { $dcFkey.evalKey(%dc.fkey.obj,f4) }
+alias f5 { $dcFkey.evalKey(%dc.fkey.obj,f5) }
+alias f6 { $dcFkey.evalKey(%dc.fkey.obj,f6) }
+alias f7 { $dcFkey.evalKey(%dc.fkey.obj,f7) }
+alias f8 { $dcFkey.evalKey(%dc.fkey.obj,f8) }
+alias f9 { $dcFkey.evalKey(%dc.fkey.obj,f9) }
+alias f10 { $dcFkey.evalKey(%dc.fkey.obj,f10) }
+;alias f11 { $dcFkey.evalKey(%dc.fkey.obj,f11) }
+alias f12 { $dcFkey.evalKey(%dc.fkey.obj,f12) }
 
-;alias sf1 { $dcFkey.evalKey(%fkey.obj,sf1) }
-alias sf2 { $dcFkey.evalKey(%fkey.obj,sf2) }
-alias sf3 { $dcFkey.evalKey(%fkey.obj,sf3) }
-alias sf4 { $dcFkey.evalKey(%fkey.obj,sf4) }
-alias sf5 { $dcFkey.evalKey(%fkey.obj,sf5) }
-alias sf6 { $dcFkey.evalKey(%fkey.obj,sf6) }
-alias sf7 { $dcFkey.evalKey(%fkey.obj,sf7) }
-alias sf8 { $dcFkey.evalKey(%fkey.obj,sf8) }
-alias sf9 { $dcFkey.evalKey(%fkey.obj,sf9) }
-alias sf10 { $dcFkey.evalKey(%fkey.obj,sf10) }
-alias sf11 { $dcFkey.evalKey(%fkey.obj,sf11) }
-alias sf12 { $dcFkey.evalKey(%fkey.obj,sf12) }
+;alias sf1 { $dcFkey.evalKey(%dc.fkey.obj,sf1) }
+alias sf2 { $dcFkey.evalKey(%dc.fkey.obj,sf2) }
+alias sf3 { $dcFkey.evalKey(%dc.fkey.obj,sf3) }
+alias sf4 { $dcFkey.evalKey(%dc.fkey.obj,sf4) }
+alias sf5 { $dcFkey.evalKey(%dc.fkey.obj,sf5) }
+alias sf6 { $dcFkey.evalKey(%dc.fkey.obj,sf6) }
+alias sf7 { $dcFkey.evalKey(%dc.fkey.obj,sf7) }
+alias sf8 { $dcFkey.evalKey(%dc.fkey.obj,sf8) }
+alias sf9 { $dcFkey.evalKey(%dc.fkey.obj,sf9) }
+alias sf10 { $dcFkey.evalKey(%dc.fkey.obj,sf10) }
+alias sf11 { $dcFkey.evalKey(%dc.fkey.obj,sf11) }
+alias sf12 { $dcFkey.evalKey(%dc.fkey.obj,sf12) }
 
-alias cf1 { $dcFkey.evalKey(%fkey.obj,cf1) }
-alias cf2 { $dcFkey.evalKey(%fkey.obj,cf2) }
-alias cf3 { $dcFkey.evalKey(%fkey.obj,cf3) }
-alias cf4 { $dcFkey.evalKey(%fkey.obj,cf4) }
-alias cf5 { $dcFkey.evalKey(%fkey.obj,cf5) }
-alias cf6 { $dcFkey.evalKey(%fkey.obj,cf6) }
-alias cf7 { $dcFkey.evalKey(%fkey.obj,cf7) }
-alias cf8 { $dcFkey.evalKey(%fkey.obj,cf8) }
-alias cf9 { $dcFkey.evalKey(%fkey.obj,cf9) }
-alias cf10 { $dcFkey.evalKey(%fkey.obj,cf10) }
-alias cf11 { $dcFkey.evalKey(%fkey.obj,cf11) }
-alias cf12 { $dcFkey.evalKey(%fkey.obj,cf12) }
+alias cf1 { $dcFkey.evalKey(%dc.fkey.obj,cf1) }
+alias cf2 { $dcFkey.evalKey(%dc.fkey.obj,cf2) }
+alias cf3 { $dcFkey.evalKey(%dc.fkey.obj,cf3) }
+alias cf4 { $dcFkey.evalKey(%dc.fkey.obj,cf4) }
+alias cf5 { $dcFkey.evalKey(%dc.fkey.obj,cf5) }
+alias cf6 { $dcFkey.evalKey(%dc.fkey.obj,cf6) }
+alias cf7 { $dcFkey.evalKey(%dc.fkey.obj,cf7) }
+alias cf8 { $dcFkey.evalKey(%dc.fkey.obj,cf8) }
+alias cf9 { $dcFkey.evalKey(%dc.fkey.obj,cf9) }
+alias cf10 { $dcFkey.evalKey(%dc.fkey.obj,cf10) }
+alias cf11 { $dcFkey.evalKey(%dc.fkey.obj,cf11) }
+alias cf12 { $dcFkey.evalKey(%dc.fkey.obj,cf12) }
