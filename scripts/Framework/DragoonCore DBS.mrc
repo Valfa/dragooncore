@@ -9,14 +9,15 @@
 
 /*
 * Class Alias
-* var %var $dcdcDbs
+* var %var $dcDbs
 *
 * @param $1 Datenbank kürzel
 * @param $2 Netzwerk oder $null
-* @param $3 "Force Network Data" $null (Standard Verhalten), r (read) oder c (create)
+* @param $3 param c,r,f
+* @return dcDbs objekt
 */
-alias dcdcDbs {
-  var %this = dcdcDbs            | ; Name of Object (Alias name)
+alias dcDbs {
+  var %this = dcDbs            | ; Name of Object (Alias name)
   var %base = dcBase        | ; Name of dcBase, $null for none  
 
   /*
@@ -50,55 +51,72 @@ alias dcdcDbs {
 
   :init
   var %x $dcBase(%this,%base).init
-  return $dcdcDbs.init(%x,$1,$2,$3)
+  return $dcDbs.init(%x,$1,$2,$3)
 
-  :setSection
-  return $dcdcDbs.setSection($1,$2)
-
-  :getUserSection
-  return $dcdcDbs.getSection($1,user,$2)
+  :getSection
+  return $dcDbs.getSection($1,user,$2)
 
   :getScriptSection
-  return $dcdcDbs.getSection($1,script,$2)
+  return $dcDbs.getSection($1,script,$2)
 
-  :setUserValue
-  return $dcdcDbs.setValue($1,user,$2,$3,$4)
+  :setValue
+  return $dcDbs.setValue($1,user,$2,$3,$4)
 
-  :getUserValue
-  return $dcdcDbs.getValue($1,user,$2,$3)
+  :getValue
+  return $dcDbs.getValue($1,user,$2,$3)
 
   :getScriptValue
-  return $dcdcDbs.getValue($1,script,$2,$3)
+  return $dcDbs.getValue($1,script,$2,$3)
 
-  :getUserItem
-  return $dcdcDbs.getItem($1,user,$2,$3)
+  :getItem
+  return $dcDbs.getItem($1,user,$2,$3)
 
   :getScriptItem
-  return $dcdcDbs.getItem($1,script,$2,$3)
+  return $dcDbs.getItem($1,script,$2,$3)
 
-  :deleteUserItem
-  return $dcdcDbs.deleteItem($1,user,$2,$3)
+  :deleteItem
+  return $dcDbs.deleteItem($1,user,$2,$3)
 
-  :deleteUserSection
-  return $dcdcDbs.deleteSection($1,user,$2)
+  :deleteSection
+  return $dcDbs.deleteSection($1,user,$2)
+
+  :getEncryptedValue
+  return $dcDbs.getValue($1,user,$2,$3,e)
+
+  :setEncryptedValue
+  return $dcDbs.setValue($1,user,$2,$3,$4,e)
 }
 
 /*
 * Initialisiert eine Datenbank
 *
-* @param $1 md5hash
+* @param $1 dcDbs objekt
 * @param $2 zu Initialisierende DB
 * @param $3 Netzwerk (optional)
-* @param $4 Force $null, r (read) oder c (create)
-* @return md5hash
+* @param $4 param (optional), r (erzwingt Netzwerk spezifische db) oder c (erstellt netzwerk db), f (db ist pfad nicht kürzel)
+* @return dcDbs objekt oder 0
 */
-alias -l dcdcDbs.init {
+alias -l dcDbs.init {
   var %path.user dcdb/user/
   var %path.script dcdb/script/
-  var %path.db $readini(dcdb/script/Framework/Framework.ini,n,dcdcDbs,$2) 
+  if ($4 == f) {
+   var %path.db $2 
+  }
+  else {
+    if ($readini(dcdb/user/Framework/Framework.ini,n,dbs,$2)) {
+      var %path.db $readini(dcdb/user/Framework/Framework.ini,n,dbs,$2)     
+    }
+    elseif ($readini(dcdb/script/Framework/Framework.ini,n,dbs,$2)) {
+      var %path.db $readini(dcdb/script/Framework/Framework.ini,n,dbs,$2)
+    }
+    else {
+      return 0
+    }
+  }
+  
   hadd -m $1 config_user %path.user $+ %path.db
   hadd -m $1 config_script %path.script $+ %path.db
- 
+
   if ($3 != $null) {
     var %file $replacex($hget($1,config_user),.ini,. $+ $3 $+ .ini)
     if ($exists(%file)) {
@@ -118,31 +136,14 @@ alias -l dcdcDbs.init {
   hadd $1 section $null
   hadd $1 database $2
   hadd $1 limit_get config_user,config_script
+  hadd $1 limit_set section
   return $1
-}
-
-/*
-* Setzt eine Sektion fest
-*
-* @param $1 Datenbank md5hash
-* @param $2 Sektion
-* @return 0 oder 1
-*/
-alias -l dcdcDbs.setSection {
-  if ($2 != $null) {
-    hadd $1 section $2
-    return 1
-  }
-  else {
-    hadd $1 section $null
-    return 0
-  }
 }
 
 /*
 * Liest den Namen einer Sektion aus
 *
-* @param $1 Datenbank md5hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbank-Datei
 * @param $3 Nr. Der Sektion
 * @return Name der Sektion oder $null
@@ -154,11 +155,12 @@ alias -l dcDbs.getSection {
 /*
 * Setzt einen Wert in einer Benutzer Ini
 *
-* @param $1 Datenbank md5Hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbank Datei
 * @param $3 Sektion (kann weggelassen werden wenn mit setsection gesetzt)
 * @param $4 Item
 * @param $5 Wert
+* @param $6 e (encrypted) (optional)
 * @return 1 oder 0
 */
 alias -l dcDbs.setValue {
@@ -167,11 +169,17 @@ alias -l dcDbs.setValue {
   }
   else {
     if ($5 != $null) {
-      .writeini $qt($hget($1,config_ $+ $2)) $3 $4 $5
+      var %section $3
+      var %item $4
+      var %value [ $iif($6 == e,$encryptValue($5),$5) ]    
     }
     else {
-      .writeini $qt($hget($1,config_ $+ $2)) $hget($1,section) $3 $4
+      var %section $hget($1,section)
+      var %item $3
+      var %value [ $iif($6 == e,$dcEncryptValue($4),$4) ]
     }
+    var %value $replace(%value,,©B,,©I,,©U,,©R,,©K,,©O)
+    .writeini $qt($hget($1,config_ $+ $2)) %section %item %value
     return 1
   }
 }
@@ -179,10 +187,11 @@ alias -l dcDbs.setValue {
 /*
 * Liest einen Wert aus
 *
-* @param $1 Datenbank md5hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbank datei
 * @param $3 Sektion (kann weggelassen werden wenn setSection gesetzt)
 * @param $4 Item
+* @param $5 e (encrypted) (optional)
 * @return Wert des Items oder $null
 */
 alias -l dcDbs.getValue {
@@ -191,22 +200,27 @@ alias -l dcDbs.getValue {
   }
   else {
     if ($4 != $null) {
-      return $readini($hget($1,config_ $+ $2),n,$3,$4)
+      var %section $3
+      var %item $4 
     }
     else {
-      return $readini($hget($1,config_ $+ $2),n,$hget($1,section),$3)
+      var %section $hget($1,section)
+      var %item $3
     }
+    var %value $readini($hget($1,config_ $+ $2),n,%section,%item)
+    var %value $replace(%value,©B,,©I,,©U,,©R,,©K,,©O,)
+    return [ $iif($5 == e,$dcDecryptValue(%value),%value) ]
   }
 }
 
 /*
 * Liest den Namen eines Bestimmten Items aus
 *
-* @param $1 Datenbank md5hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbank-datei
 * @param $3 Sektion (kann entfallen wenn setSection gesetzt)
 * @param $4 ItemId
-* @return Name der Sektion oder $null
+* @return Name des Items oder $null
 */
 alias -l dcDbs.getItem {
   if ($hget($1,section) == $null && $4 == $null) {
@@ -225,7 +239,7 @@ alias -l dcDbs.getItem {
 /*
 * Löscht einen Bestimmten Wert
 *
-* @param $1 Datenbank md5hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbank datei
 * @param $3 Sektion (kann entfallen wenn setSection gesetzt)
 * @param $4 item
@@ -250,7 +264,7 @@ alias -l dcDbs.deleteItem {
 /*
 * Löscht eine Bestimmten Sektion
 *
-* @param $1 Datenbank md5hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbak datei
 * @param $3 Sektion (kann entfallen wenn setSection gesetzt)
 * @return 1 oder 0
@@ -277,10 +291,10 @@ alias -l dcDbs.deleteSection {
 * Class Alias
 * var %var $dcDbsList
 *
-* @param $1 dcDbs md5hash
+* @param $1 dcDbs objekt
 * @param $2 Datenbank-datei
 * @param $3 sektion oder $null
-* @return dcDbsList md5hash
+* @return dcDbsList objekt
 */
 alias dcDbsList {
   var %this = dcDbsList              | ; Name of Object (Alias name)
@@ -318,22 +332,19 @@ alias dcDbsList {
   :init
   var %x $dcList(%this,%base).init
   return $dcDbsList.init(%x,$1,$2,$3)
-
-
 }
 
 /*
 * Initialisiert eine Liste
 *
-* @param $1 md5hash
-* @param $2 dcDbs md5hash
+* @param $1 dcDbsList objekt
+* @param $2 dcDbs objekt
 * @param $3 Datenbank-datei
 * @param $4 sektion oder $null
-* @return DB md5hash
+* @return dcDbsList objekt
 */
-alias -l dcDbsList.INIT {
-  var %file $hget($2,config_ $+ $3)
-  hadd $1 getData 1
+alias -l dcDbsList.init {
+  var %file $dcDbs($2,config_ $+ $3).get
   hadd $1 file %file
   hadd $1 section $4
   hadd $1 current_item $null
@@ -368,7 +379,7 @@ alias -l dcDbsList.INIT {
 /*
 * Liest Daten an der aktuellen ZeigerPosition aus
 *
-* @param $1 dcDbsList md5hash
+* @param $1 dcDbsList objekt
 * @return 1
 */
 alias dcDbsList.getData {
@@ -378,7 +389,8 @@ alias dcDbsList.getData {
   }
   else {
     hadd $1 current_item $ini($hget($1,file),$hget($1,section),$hget($1,pos))
-    hadd $1 current_value $readini($hget($1,file),n,$hget($1,section),$hget($1,current_item))
+    var %value $readini($hget($1,file),n,$hget($1,section),$hget($1,current_item))
+    hadd $1 current_value $replace(%value,©B,,©I,,©U,,©R,,©K,,©O,)
   }
   return 1
 }

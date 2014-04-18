@@ -79,7 +79,7 @@ alias dcAutoIdent {
 */
 alias -l dcAutoIdent.init {
   if ($2 == $null || $hget($2,database) != modul_auto_identify) { 
-    var %db $dcdbs(modul_auto_identify)
+    var %db $dcDbs(modul_auto_identify)
     hadd %db createDB 1
   }
   else {
@@ -87,11 +87,11 @@ alias -l dcAutoIdent.init {
     hadd %db createDB 0
   }
   hadd $1 dbhash %db
-  .noop $dcdbs(%db,config).setSection
-  var %pwd $dcdbs(%db,pwd).getUserValue
-  var %connect $dcdbs(%db,connect).getUserValue
-  if (%pwd == $null) { var %pwd $dcdbs(%db,pwd).getScriptValue }
-  if (%connect == $null) { var %connect $dcdbs(%db,connect).getScriptValue }
+  .noop $dcDbs(%db,section,config).set
+  var %pwd $dcDbs(%db,pwd).getValue
+  var %connect $dcDbs(%db,connect).getValue
+  if (%pwd == $null) { var %pwd $dcDbs(%db,pwd).getScriptValue }
+  if (%connect == $null) { var %connect $dcDbs(%db,connect).getScriptValue }
   hadd $1 config.pwd $decryptValue(%pwd)
   hadd $1 config.connect %connect
   hadd $1 error.obj $dcError
@@ -108,7 +108,7 @@ alias -l dcAutoIdent.init {
 */
 alias -l dcAutoIdent.destroy {
   if ($hget($1,createDB) == 1) {
-    .noop $dcdbs($hget($1,dbhash)).destroy
+    .noop $dcDbs($hget($1,dbhash)).destroy
   }
   .noop $dcError($hget($1,error.obj)).destroy
   .noop $dcBase($1).destroy
@@ -125,10 +125,10 @@ alias -l dcAutoIdent.destroy {
 */
 alias -l dcAutoIdent.writeConfig {
   if ($dcAutoIdent($1,$2,$3).checkConfig) {    
-    .noop $dcdbs($hget($1,dbhash),config).setSection
-    if ($2 != $null) { .noop $dcdbs($hget($1,dbhash),pwd,$encryptValue($2)).setUserValue | hadd $1 config.pwd $2 }
-    else { .noop $dcdbs($hget($1,dbhash),pwd).deleteUserItem | hdel $1 config.pwd }
-    .noop $dcdbs($hget($1,dbhash),connect,$3).setUserValue | hadd $1 config.connect $3
+    .noop $dcDbs($hget($1,dbhash),section,config).set
+    if ($2 != $null) { .noop $dcDbs($hget($1,dbhash),pwd,$encryptValue($2)).setValue | hadd $1 config.pwd $2 }
+    else { .noop $dcDbs($hget($1,dbhash),pwd).deleteItem | hdel $1 config.pwd }
+    .noop $dcDbs($hget($1,dbhash),connect,$3).setValue | hadd $1 config.connect $3
 
     return 1
   }
@@ -147,7 +147,7 @@ alias -l dcAutoIdent.writeConfig {
 */
 alias -l dcAutoIdent.checkConfig {
   .noop $dcError($hget($1,error.obj)).clear
-  if ($regex(regex,$2,[[:space:]])) {
+  if ($dcCheck($2).space) {
     .noop $dcError($hget($1,error.obj),Passwort darf keine Leerzeichen enthalten).add
   }
 
@@ -188,7 +188,7 @@ alias -l dcAutoIdent.addNickGroup {
 alias -l dcAutoIdent.checkNickGroup {
   .noop $dcerror($hget($1,error.obj)).clear
 
-  if ($regex(regex,$2,[[:space:]])) {
+  if (!$dcCheck($2).space) {
     .noop $dcError($hget($1,error.obj),Nick darf keine Leerzeichen enthalten).add
   }
   elseif
@@ -199,7 +199,7 @@ alias -l dcAutoIdent.checkNickGroup {
 
 
 
-  if ($regex(regex,$3,[[:space:]])) {
+  if (!$dcCheck($3).space) {
     .noop $dcError($hget($1,error.obj),Passwort darf keine Leerzeichen enthalten).add
   }
 

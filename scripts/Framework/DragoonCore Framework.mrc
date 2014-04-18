@@ -3,7 +3,7 @@
 * @param $1- unverschlüsselter Wert
 * @return verschlüsselter Wert
 */
-alias encryptValue {
+alias dcEncryptValue {
   if ($1- != $null) {
     if (!$exists(dcdb/user/Framework/dragooncore.key)) {
       var %key $sha1($md5($ctime))
@@ -22,7 +22,7 @@ alias encryptValue {
 * @param $1- verschlüsselter Wert
 * @return $null oder unverschlüsselter Wert
 */
-alias decryptValue {
+alias dcDecryptValue {
   if ($1- != $null) {
     if (!$exists(dcdb/user/Framework/dragooncore.key)) {
       return $null
@@ -35,24 +35,29 @@ alias decryptValue {
   }
 }
 
-/*
-* Kodiert FormatCodes in einem String
-*
-* @param $1- zu Kodierenender String
-* @return Kodierter String
-*/
-alias formatEncode {
-  return $replace($1-,,©B,,©I,,©U,,©R,,©K,,©O)
-}
+alias dcCheck {
+  var %regex $dcDbs(%dc.fw.dbhash,regex,$prop).getScriptValue
+  if ($1 == $null || %regex == 0) { return 0 }
+  goto $prop
+  :error
+  echo -s $error
+  .reseterror
+  return 0
 
-/*
-* Dekodiert FormatCodes in einem String
-*
-* @param $1- zu Dekodierenender String
-* @return dekodierter String
-*/
-alias formatDecode {
-  return $replace($1-,©B,,©I,,©U,,©R,,©K,,©O,)
+  :space
+  return [ $iif($regex(regex,$1-,%regex),0,1) ]
+
+  :addSpace
+  return [ $iif($regex(regex,$1-,%regex),0,1) ]
+
+  :address
+  return [ $iif($regex(regex,$1-,%regex),1,0) ]
+
+  :email
+  return [ $iif($regex(regex,$1-,%regex),1,0) ]
+
+  :port
+  return [ $iif($regex(regex,$1-,%regex),1,0) ]
 }
 
 menu channel,status {
@@ -65,22 +70,21 @@ alias server {
     .server $1-
   }
   else {
-    var %list $dcDbs(%dc.fw.dbhash,onRemote,alias_server).getUserValue
+    var %list $dcDbs(%dc.fw.dbhash,onRemote,alias_server).getValue
     var %i 1
     while (%i <= $numtok(%list,44)) {
       $gettok(%list,%i,44)
       inc %i
     }
+    server $hget(alias_server,param)
   }
-  server $hget(alias_server,param)
-  halt
 }
 
 on *:start:{
   set %dc.fw.dbhash $dcDbs(framework)
   set %dc.fkey.obj $dcFkey
   set %oop 0
-  var %list $dcDbs(%dc.fw.dbhash,onRemote,onStart).getUserValue
+  var %list $dcDbs(%dc.fw.dbhash,onRemote,onStart).getValue
   var %i 1
   while (%i <= $numtok(%list,44)) {
     $gettok(%list,%i,44)
@@ -96,7 +100,7 @@ on *:exit:{
 }
 
 on *:connect:{
-  var %list $dcDbs(%dc.fw.dbhash,onRemote,onConnect).getUserValue
+  var %list $dcDbs(%dc.fw.dbhash,onRemote,onConnect).getValue
   var %i 1
   while (%i <= $numtok(%list,44)) {
     $gettok(%list,%i,44)
@@ -104,8 +108,8 @@ on *:connect:{
   }
 }
 
-on *:Input:*: {
-  var %list $dcDbs(%dc.fw.dbhash,onRemote,onInput).getUserValue
+on *:Input:?#: {
+  var %list $dcDbs(%dc.fw.dbhash,onRemote,onInput).getValue
   if (%list) {
     if ($left($1,1) == /) && ($ctrlenter == $false) { return }
     hmake input_ $+ $active 100

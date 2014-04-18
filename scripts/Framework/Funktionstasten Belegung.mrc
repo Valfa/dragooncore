@@ -135,7 +135,7 @@ alias dcFkeyList.getData {
         var %cmd_tmp $dcDbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getScriptValue
       }
       else {
-        var %cmd_tmp $dcDbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getUserValue
+        var %cmd_tmp $dcDbs($hget($1,dbhash),$gettok(%tmp,1,44),$gettok(%tmp,2,44)).getValue
       }
       hadd $1 command $gettok(%cmd_tmp,1,44)
       hadd $1 command_line $gettok(%cmd_tmp,2,44)
@@ -293,9 +293,9 @@ alias -l dcFkey.createUserList {
   if (!$dcDbsList($hget($1,dbhash),user,__key_assignments__)) {
     var %list $dcDbsList($hget($1,dbhash),script,__key_assignments__)
     .noop $dcDbsList(%list).prepareWhile
-    .noop $dcDbs($hget($1,dbhash),__key_assignments__).setSection
+    .noop $dcDbs($hget($1,dbhash),section,__key_assignments__).set
     while ($dcDbsList(%list).next) {
-      .noop $dcDbs($hget($1,dbhash),$dcDbsList(%list).getItem,$dcDbsList(%list).getValue).setUserValue
+      .noop $dcDbs($hget($1,dbhash),$dcDbsList(%list).getItem,$dcDbsList(%list).getValue).setValue
     }
     .noop $dcDbsList(%list).destroy
   }
@@ -360,7 +360,7 @@ alias -l dcFkey.getGroupCommands {
 alias -l dcFkey.saveKeyScript {
   var %group $gettok($hget($hget($1,grouplist),n $+ $3),1,44)
   var %id $left($gettok($hget($hget($1,grouplist),n $+ $3),2,44),1) $+ $4
-  .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,%group $+ $chr(44) $+ %id).setUserValue
+  .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,%group $+ $chr(44) $+ %id).setValue
   return 1
 }
 
@@ -374,7 +374,7 @@ alias -l dcFkey.saveKeyScript {
 */
 alias -l dcFkey.saveKeyUser {
   .noop $dcError($hget($1,error.obj)).clear
-  if ($regex(regex,$3-,^[[:space:]]|[[:space:]]$) == 1) {
+  if (!$dcCheck($3-).addSpace) {
     .noop $dcError($hget($1,error.obj),Eingabe enthält unzulässige Leerzeichen).add
   }
 
@@ -382,7 +382,7 @@ alias -l dcFkey.saveKeyUser {
     return 0
   }
   else {
-    .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,__user__ $+ $chr(44) $+ u0 $+ $chr(44) $+ $3-).setUserValue
+    .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,__user__ $+ $chr(44) $+ u0 $+ $chr(44) $+ $3-).setValue
     return 1
   }
 }
@@ -394,7 +394,7 @@ alias -l dcFkey.saveKeyUser {
 * @return 1
 */
 alias -l dcfkey.delKey {
-  .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,0).setUserValue
+  .noop $dcDbs($hget($1,dbhash),__key_assignments__,$2,0).setValue
   return 1
 }
 
@@ -406,7 +406,7 @@ alias -l dcfkey.delKey {
 * @return Befehlszeile
 */
 alias -l dcFkey.evalKey {
-  var %keynr $dcDbs($hget($1,dbhash),__key_assignments__,$2).getUserItem
+  var %keynr $dcDbs($hget($1,dbhash),__key_assignments__,$2).getItem
   .noop $dcFkeyList($hget($1,fkeylist),%keynr).setPos
   return $dcFkeyList($hget($1,fkeylist)).command_line
 }
@@ -640,9 +640,9 @@ alias -l dcFKeyDialog.sclickFKeyList {
     .noop $dcFkeyDialog($1).changeInputUser
     .noop $dcDialog($1,5-6,).enableControls
 
-    var %item $dcDbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2,1).sel).getUserItem
+    var %item $dcDbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2,1).sel).getItem
 
-    xdid -a $hget($1,dialog.name) 7 $gettok($dcDbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,%item).getUserValue,3,44)
+    xdid -a $hget($1,dialog.name) 7 $gettok($dcDbs($dcFkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,%item).getValue,3,44)
   }
   else {
     .noop $dcFkeyDialog($1).changeInputScript
@@ -695,7 +695,7 @@ alias -l dcFkeyDialog.changeInputUser {
 * @return 1 oder 0
 */
 alias -l dcFkeyDialog.saveKey {
-  var %key $dcDbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getUserItem
+  var %key $dcDbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getItem
   if ($xdid($hget($1,dialog.name),10).state == 1) {
     if ($dcfkey($hget($1,fkey.obj),%key,$xdid($hget($1,dialog.name),3).sel,$xdid($hget($1,dialog.name),4).sel).saveKeyScript) {
       var %list $dcFkey($hget($1,fkey.obj),fkeylist).get
@@ -751,7 +751,7 @@ alias -l dcfkeyDialog.editUserBox {
 * @return 1
 */
 alias -l dcFkeyDialog.delKey {
-  var %key $dcDbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getUserItem
+  var %key $dcDbs($dcfkey($hget($1,fkey.obj),dbhash).get,__key_assignments__,$xdid($hget($1,dialog.name),2).sel).getItem
   .noop $dcFkey($hget($1,fkey.obj),%key).delKey
   xdid -v $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).sel 2 
   xdid -v $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).sel 3 

@@ -49,7 +49,7 @@ alias dcConfig {
 
   :init
   var %x $dcDialog(%this,%base)
-  return $dcConfig.init(%x,$1,$2)
+  return $dcConfig.init(%x,$1,$2,$3)
 
   :destroy
   return $dcConfig.destroy($1)
@@ -58,7 +58,7 @@ alias dcConfig {
   return $dcConfig.createControls($1)
 
   :fillRebar
-  return $dcConfig.fillRebar($1)
+  return $dcConfig.fillRebar($1,$2)
 
   :addRebarEntrys
   return $dcConfig.addRebarEntrys($1,$2)
@@ -89,6 +89,10 @@ alias dcConfig {
 
   :loadDefaults
   return $dcConfig.loadDefaults($1)
+
+  :destroyPanel
+  return $dcConfig.destroyPanel($1)
+
 }
 
 /*
@@ -96,7 +100,8 @@ alias dcConfig {
 *
 * @param $1 dcConfig objekt
 * @param $2 dialog name
-* @param $3 einsprung Punkt
+* @param $3 baum (script oder user)
+* @param $3 einsprung Punkt (optional)
 * @return dcConfig objekt
 */
 alias -l dcConfig.init {
@@ -104,14 +109,21 @@ alias -l dcConfig.init {
   else { hadd $1 dialog.name $2 }
 
   hadd $1 dbhash $dcDbs(fw_cfg_tree)
-  hadd $1 config.rebarID $dcDbs(%dc.fw.dbash,config_dialog,rebarID).getScriptValue
+  hadd $1 config.rebarID $dcDbs(%dc.fw.dbhash,config_dialog,rebarID).getScriptValue
   hadd $1 limit_get config.rebarID,currentTree,currentSelpath,currentPanel,currentPanel.dbhash,dialog.name
   hadd $1 limit_set config.local
-  hadd $1 jumpin.name $3
+  hadd $1 loadTree $3
+  hadd $1 jumpin.user.name $null
+  hadd $1 jumpin.script.name $null
+  hadd $1 jumpin. $+ $3 $+ .name $4
   hadd $1 jumpin.point 1
 
   .noop $dcConfig($1).createControls
-  .noop $dcConfig($1).fillRebar
+  .noop $dcConfig($1,$3).fillRebar
+  if (%dc.config.tree == user) {
+    xdid -u $hget($1,dialog.name) 1030
+    xdid -c $hget($1,dialog.name) 1031
+  }
 
   .noop $dcConfig($1).selectTreeviewItem
 
@@ -150,7 +162,18 @@ alias -l dcConfig.createControls {
 
   xdialog -c $hget($1,dialog.name) 1009 panel 210 55 435 540
 
-  xdialog -c $hget($1,dialog.name) 1010 toolbar 5 55 200 30 flat noauto nodivider tooltips list
+  xdialog -c $hget($1,dialog.name) 1020 text 5 55 200 20
+  xdid -t $hget($1,dialog.name) 1020 Konfiguration wählen
+  xdid -f $hget($1,dialog.name) 1020 + default 10 Verdana
+
+  xdialog -c $hget($1,dialog.name) 1030 radio 5 75 95 20 pushlike center
+  xdid -t $hget($1,dialog.name) 1030 Framework
+  xdid -c $hget($1,dialog.name) 1030
+
+  xdialog -c $hget($1,dialog.name) 1031 radio 100 75 95 20 pushlike center
+  xdid -t $hget($1,dialog.name) 1031 Module  
+
+  xdialog -c $hget($1,dialog.name) 1010 toolbar 5 100 200 30 flat noauto  tooltips list
   xdid -l $hget($1,dialog.name) 1010 24
   xdid -w $hget($1,dialog.name) 1010 +nh 0 images/ico/page_add.ico
   xdid -w $hget($1,dialog.name) 1010 +nh 0 images/ico/page_gear.ico
@@ -164,7 +187,11 @@ alias -l dcConfig.createControls {
   xdid -a $hget($1,dialog.name) 1010 2 +ld 30 2 $rgb(255,0,0) $chr(9) Standart Konfiguration Laden
   xdid -a $hget($1,dialog.name) 1010 3 +ld 30 3 $rgb(255,0,0) $chr(9) Lokale Konfiguration Löschen
 
-  xdialog -c $hget($1,dialog.name) 1100 rebar 5 85 200 510 borders fixedorder noauto noparentalign noresize vertical notheme
+  xdialog -c $hget($1,dialog.name) 1040 text 5 135 200 20 center
+  xdid -t $hget($1,dialog.name) 1040 Framework Einstellungen
+  xdid -f $hget($1,dialog.name) 1040 + default 10 Verdana
+
+  xdialog -c $hget($1,dialog.name) 1100 rebar 5 150 200 445 borders fixedorder noauto noparentalign noresize vertical notheme
 
   return 1
 }
@@ -173,19 +200,35 @@ alias -l dcConfig.createControls {
 * Füllt die Rebar mit Einträgen
 *
 * @param $1 dcConfig objekt
+* @param $2 script oder user
 * @return 1
 */
 alias -l dcConfig.fillRebar {
-  hadd $1 treeviewID $hget($1,config.rebarID)
-  .noop $dcConfig($1,script).addRebarEntrys
-  .noop $dcConfig($1,user).addRebarEntrys
+  .hfree -w dcConfTree_*
+  hadd $1 loadTree $2
+  .noop $dcConfig($1).destroyPanel
 
-  if ($hget($1,jumpin.point) > 1) {
-    xdid -m $hget($1,dialog.name) $hget($1,config.rebarID) $hget($1,jumpin.point)
+  xdialog -d $hget($1,dialog.name) 1100
+  xdialog -c $hget($1,dialog.name) 1100 rebar 5 150 200 445 borders fixedorder noauto noparentalign noresize vertical notheme
+  hadd $1 treeviewID $hget($1,config.rebarID)
+  if ($2 == user) { 
+    xdid -t $hget($1,dialog.name) 1040 Modul Einstellungen
+    .noop $dcConfig($1,user).addRebarEntrys
+
+    hadd $1 currentTree $calc($hget($1,jumpin.point) + $hget($1,config.rebarID))
+    hadd $1 currentSelpath 1
+    xdid -c $hget($1,dialog.name) $calc($hget($1,jumpin.point) + $hget($1,config.rebarID)) 1
   }
-  xdid -c $hget($1,dialog.name) $calc($hget($1,jumpin.point) + $hget($1,config.rebarID)) 1
-  hadd $1 currentTree $calc($hget($1,jumpin.point) + $hget($1,config.rebarID))
-  hadd $1 currentSelpath 1
+  else {
+    xdid -t $hget($1,dialog.name) 1040 Framework Einstellungen
+    .noop $dcConfig($1,script).addRebarEntrys    
+    hadd $1 currentTree 1101
+    hadd $1 currentSelpath 1
+    xdid -c $hget($1,dialog.name) 1101 1
+  }
+    if ($hget($1,jumpin.point) > 1) {
+      xdid -m $hget($1,dialog.name) $hget($1,config.rebarID) $hget($1,jumpin.point)
+    }
   ;hadd $1 currentPanel $gettok($hget(dcConfTree_1101,n1),3,44)
   return 1
 }
@@ -206,8 +249,8 @@ alias -l dcConfig.addRebarEntrys {
     while ($dcDbsList(%list.inner).next) {
       if ($dcDbsList(%list.inner).getItem == n0) {
         hinc $1 treeviewID
-        xdid -a $hget($1,dialog.name) $hget($1,config.rebarID) 0 + 0 200 0 0 $rgb(0,0,255) $dcDbsList(%list.inner).getValue $chr(9) $hget($1,treeviewID) treeview 0 30 200 515 showsel hasbuttons haslines linesatroot
-        if ($hget($1,jumpin.name) == $dcDbsList(%list.outer).getItem) {
+        xdid -a $hget($1,dialog.name) $hget($1,config.rebarID) 0 + 0 200 0 0 $rgb(0,0,255) $dcDbsList(%list.inner).getValue $chr(9) $hget($1,treeviewID) treeview 0 30 200 440 showsel hasbuttons haslines linesatroot
+        if ($hget($1,jumpin. $+ $2 $+ .name) == $dcDbsList(%list.outer).getItem) {
           hadd $1 jumpin.point $calc($hget($1,treeviewID) - $hget($1,config.rebarID))
         }
       }
@@ -250,6 +293,13 @@ alias -l dcConfig.selectRebarEntry {
   hadd $1 currentSelpath 1
   ;  hadd $1 currentPanel $gettok($hget(dcConfTree_ $+ $hget($1,currentTree),n1),3,44)
   xdid -c $hget($1,dialog.name) $hget($1,currentTree) 1
+
+  if ($hget($1,loadTree) == user) {
+    hadd $1 jumpin.user.name $dcDbs($hget($1,dbhash),$calc($hget($1,currentTree) - $hget($1,config.rebarID))).getSection
+  }
+  else {
+    hadd $1 jumpin.script.name $dcDbs($hget($1,dbhash),$calc($hget($1,currentTree) - $hget($1,config.rebarID))).getScriptSection
+  }
   return 1
 }
 
@@ -275,12 +325,12 @@ alias dcConfig.initDbs {
 }
 
 /*
-* Ein Treeview Item wurde selektiert 
+* Zerstört ein panel
 *
 * @param $1 dcConfig objekt
 * @return 1
 */
-alias -l dcConfig.selectTreeviewItem {
+alias -l dcConfig.destroyPanel {
   if ($hget($1,currentPanel) != $null) {
     dc. $+ $hget($1,currentPanel) $+ .destroyPanel
     if ($hget($1,currentPanel.dbhash) != $null && $hget($1,currentPanel.dbhash) != 0) {
@@ -289,7 +339,19 @@ alias -l dcConfig.selectTreeviewItem {
     }
     xdialog -d $hget($1,dialog.name) 1009
     xdialog -c $hget($1,dialog.name) 1009 panel 210 55 435 540
+    hadd $1 currentPanel $null
   }
+  return 1
+}
+
+/*
+* Ein Treeview Item wurde selektiert 
+*
+* @param $1 dcConfig objekt
+* @return 1
+*/
+alias -l dcConfig.selectTreeviewItem {
+  .noop $dcConfig($1).destroyPanel
 
   hadd $1 currentSelpath $xdid($hget($1,dialog.name),$hget($1,currentTree)).selpath
   hadd $1 currentPanel $gettok($hget(dcConfTree_ $+ $hget($1,currentTree),n $+ $gettok($hget($1,currentSelpath),1,32)),3,44)
@@ -384,7 +446,14 @@ alias -l dcConfig.loadDefaults {
 * Alias zum Aufrufen des Config Dialoges
 */
 alias config {
+  set %dc.config.tree script
   set %dc.config.jumpin $1
+  dialog -ma dcConf dcConf_table
+}
+
+alias config_modul {
+  set %dc.config.jumpin $1
+  set %dc.config.tree user
   dialog -ma dcConf dcConf_table
 }
 
@@ -403,7 +472,7 @@ on *:dialog:dcConf:*:*: {
   if ($devent == init) {
     dcx Mark $dname dcConf.events
     xdialog -b $dname +twy
-    set %dc.config.obj $dcConfig($dname,%dc.config.jumpin)
+    set %dc.config.obj $dcConfig($dname,%dc.config.tree,%dc.config.jumpin)
   }
   elseif ($devent == close) {
     .noop $dcConfig(%dc.config.obj).destroy
@@ -427,6 +496,8 @@ alias dcConf.events {
         elseif ($4 == 2) { .noop $dcConfig(%dc.config.obj).loadDefaults }
         elseif ($4 == 3) { .noop $dcConfig(%dc.config.obj).delConfig }
       }
+      elseif ($3 == 1030) { .noop $dcConfig(%dc.config.obj,script).fillRebar }
+      elseif ($3 == 1031) { .noop $dcConfig(%dc.config.obj,user).fillRebar }
       elseif ($3 == $dcConfig(%dc.config.obj,config.rebarId).get) {   
         if ($4 == 1) { xdid -m $1 $dcConfig(%dc.config.obj,config.rebarID).get 1 }
         .noop $dcConfig(%dc.config.obj,$4).selectRebarEntry

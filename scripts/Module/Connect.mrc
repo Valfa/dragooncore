@@ -3,6 +3,7 @@
 *
 * @author Valfa
 * @version 1.0
+* @db Module/Connect.ini
 *
 * Server/Netzwerk Verwaltung mit Bouncer Support und Multi-Server AutoConnect
 */
@@ -76,16 +77,22 @@ alias dcConnect {
   return $dcConnect.delNetwork($1)
 
   :saveIdent
-  return $dcConnect.saveIdent($1,$2,$3,$4,$5,$6)
+  return $dcConnect.saveIdent($1,$2,$3,$4,$5,$6-)
 
   :checkIdent
-  return $dcConnect.checkIdent($1,$2,$3,$4,$5)
+  return $dcConnect.checkIdent($1,$2,$3,$4,$5,$6-)
 
   :prepareNewPerform
   return $dcConnect.prepareNewPerform($1)
 
   :addPerformLine
   return $dcConnect.addPerformLine($1,$2)
+
+  :checkConfig
+  return $dcConnect.checkConfig($1,$2,$3)
+
+  :saveConfig
+  return $dcConnect.saveConfig($1,$2,$3)
 }
 
 /*
@@ -106,6 +113,19 @@ alias -l dcConnect.init {
   }
   hadd $1 dbhash %db
   hadd $1 dbhash.local 0
+  .noop $dcDbs(%db,section,config).set
+  if ($dcDbs(%db,ssl).getValue == $null) {
+    hadd $1 ssl $dcDbs(%db,ssl).getScriptValue
+  }
+  else {
+    hadd $1 ssl $dcDbs(%db,ssl).getValue
+  }
+  if ($dcDbs(%db,mirc_ident).getValue == $null) {
+    hadd $1 mirc_ident $dcDbs(%db,mirc_ident).getScriptValue
+  }
+  else {
+    hadd $1 mirc_ident $dcDbs(%db,mirc_ident).getValue
+  }
   hadd $1 error.obj $dcError
   hadd $1 ident.default.nick $null
   hadd $1 ident.default.anick $null
@@ -117,8 +137,8 @@ alias -l dcConnect.init {
   hadd $1 ident.local.fullname $null
   hadd $1 perform 0
   hadd $1 network $null
-  hadd $1 limit_get perform
-  .noop $dcConnect($1,0).getDefaultIdent
+  hadd $1 limit_get perform,ssl,mirc_ident
+  .noop $dcConnect($1).getDefaultIdent
   return $1
 }
 
@@ -176,31 +196,39 @@ alias -l dcConnect.setNetwork {
 * @return 1
 */
 alias -l dcConnect.getDefaultIdent {
-  .noop $dcDbs($hget($1,dbhash),ident).setSection
+  if ($hget($1,mirc_ident) == 0) {
+    .noop $dcDbs($hget($1,dbhash),section,ident).set
 
-  if ($dcDbs($hget($1,dbhash),nick).getUserValue != $null) {
-    hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getUserValue
+    if ($dcDbs($hget($1,dbhash),nick).getValue != $null) {
+      hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getValue
+    }
+    else {
+      hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getScriptValue
+    }
+    if ($dcDbs($hget($1,dbhash),anick).getValue != $null) {
+      hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getValue
+    }
+    else {
+      hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getScriptValue
+    }
+    if ($dcDbs($hget($1,dbhash),fullname).getValue != $null) {
+      hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getValue
+    }
+    else {
+      hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getScriptValue
+    }
+    if ($dcDbs($hget($1,dbhash),emailaddr).getValue != $null) {
+      hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getValue
+    }
+    else {
+      hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getScriptValue
+    }
   }
   else {
-    hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getScriptValue
-  }
-  if ($dcDbs($hget($1,dbhash),anick).getUserValue != $null) {
-    hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getUserValue
-  }
-  else {
-    hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getScriptValue
-  }
-  if ($dcDbs($hget($1,dbhash),fullname).getUserValue != $null) {
-    hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getUserValue
-  }
-  else {
-    hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getScriptValue
-  }
-  if ($dcDbs($hget($1,dbhash),emailaddr).getUserValue != $null) {
-    hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getUserValue
-  }
-  else {
-    hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getScriptValue
+    hadd $1 ident.default.nick $mnick
+    hadd $1 ident.default.anick $anick
+    hadd $1 ident.default.emailaddr $emailaddr
+    hadd $1 ident.default.fullname $fullname
   }
   return 1
 }
@@ -213,11 +241,11 @@ alias -l dcConnect.getDefaultIdent {
 */
 alias -l dcConnect.getNetworkIdent {
   if ($hget($1,dbhash.local)) {
-    .noop $dcDbs($hget($1,dbhash.local),ident).setSection
-    hadd $1 ident.local.nick $dcDbs($hget($1,dbhash.local),nick).getUserValue
-    hadd $1 ident.local.anick $dcDbs($hget($1,dbhash.local),anick).getUserValue
-    hadd $1 ident.local.emailaddr $dcDbs($hget($1,dbhash.local),emailaddr).getUserValue
-    hadd $1 ident.local.fullname $dcDbs($hget($1,dbhash.local),fullname).getUserValue
+    .noop $dcDbs($hget($1,dbhash.local),section,ident).set
+    hadd $1 ident.local.nick $dcDbs($hget($1,dbhash.local),nick).getValue
+    hadd $1 ident.local.anick $dcDbs($hget($1,dbhash.local),anick).getValue
+    hadd $1 ident.local.emailaddr $dcDbs($hget($1,dbhash.local),emailaddr).getValue
+    hadd $1 ident.local.fullname $dcDbs($hget($1,dbhash.local),fullname).getValue
   }
   return 1
 }
@@ -266,7 +294,9 @@ alias -l dcConnect.getIdent {
 */
 alias -l dcConnect.getNetworkData {
   .noop $dcConnect($1).getNetworkIdent
-  hadd $1 perform $dcDbsList($hget($1,dbhash.local),user,perform)
+  if ($hget($1,dbhash.local)) {
+    hadd $1 perform $dcDbsList($hget($1,dbhash.local),user,perform)
+  }
   return 1
 }
 
@@ -307,26 +337,31 @@ alias -l dcConnect.delNetwork {
 * Überprüft die Ident Informationen
 *
 * @param $1 dcConnect objekt
-* @param $2 nick
-* @param $3 anick
-* @param $4 emailaddr
-* @param $5 fullname
+* @param $2 default 1 oder 0
+* @param $3 nick
+* @param $4 anick
+* @param $5 emailaddr
+* @param $6- fullname
 * @return 1 oder 0
 */
 alias -l dcConnect.checkIdent {
-  if ($2 != $null && $regex(regex,$2,[[:space:]]) == 1) {
+  .noop $dcerror($hget($1,error.obj)).clear
+  if ($2 == 1 && ($3 == $null || $4 == $null || $5 == $null || $6 == $null)) {
+    .noop $dcError($hget($1,error.obj),Es müssen alle Werte ausgefüllt sein).add
+  }
+  if ($3 != $null && !$dcCheck($3).space) {
     .noop $dcError($hget($1,error.obj),Nick darf keine Leerzeichen enthalten).add
   }
-  if ($3 != $null && $regex(regex,$3,[[:space:]]) == 1) {
+  if ($4 != $null && !$dcCheck($4).space) {
     .noop $dcError($hget($1,error.obj),Alternativer Nick darf keine Leerzeichen enthalten).add
   }
-  if ($2 != $null && $3 != $null && $2 == $3) {
+  if ($3 != $null && $4 != $null && $3 == $4) {
     .noop $dcError($hget($1,error.obj),Nick und Alternativer Nick duerfen nicht gleich sein).add
   }
-  if ($4 != $null && $regex(regex,$4,.+@.+\..+) == 0) {
+  if ($5 != $null && (!$dcCheck($5).space || !$dcCheck($5).email)) {
     .noop $dcError($hget($1,error.obj),E-Mail Addresse ungültig).add
   }
-  if ($5 != $null && $regex(regex,$5,^[[:space:]]|[[:space:]]$) == 1) {
+  if ($6 != $null && !$dcCheck($6-).addSpace) {
     .noop $dcError($hget($1,error.obj),Name ungültig).add
   }
 
@@ -346,24 +381,23 @@ alias -l dcConnect.checkIdent {
 * @param $3 nick
 * @param $4 anick
 * @param $5 emailaddr
-* @param $6 fullname
+* @param $6- fullname
 * @return 1 oder 0
 */
 alias -l dcConnect.saveIdent {
-  .noop $dcerror($hget($1,error.obj)).clear
   if ($2 == 0 && $hget($1,dbhash.local) == 0) {
-    .noop $dcError($hget($1,error.obj),Netzwerk wurde nicht gesetzt).add
-    return 0
+    hadd $1 dbhash.local $dcDbs(modul_connect,$hget($1,network),c)
+    ;.noop $dcError($hget($1,error.obj),Netzwerk wurde nicht gesetzt).add
   }  
-  if ($dcConnect($1,$3,$4,$5,$6).checkIdent) {
+  if ($dcConnect($1,$2,$3,$4,$5,$6-).checkIdent) {
     if ($2 == 1) { var %db $hget($1,dbhash) | var %pre ident.default. }
     else { var %db $hget($1,dbhash.local) | var %pre ident.local. }
-    .noop $dcDbs(%db,ident).setSection
-    .noop $dcDbs(%db).deleteUserSection
-    if ($3 != $null) { .noop $dcDbs(%db,nick,$3).setUserValue | hadd $1 %pre $+ nick $3 }
-    if ($4 != $null) { .noop $dcDbs(%db,anick,$4).setUserValue | hadd $1 %pre $+ anick $4 }
-    if ($5 != $null) { .noop $dcDbs(%db,emailaddr,$5).setUserValue | hadd $1 %pre $+ emailaddr $5 }
-    if ($6 != $null) { .noop $dcDbs(%db,fullname,$6).setUserValue | hadd $1 %pre $+ fullname $6 }
+    .noop $dcDbs(%db,section,ident).set
+    .noop $dcDbs(%db).deleteSection
+    if ($3 != $null) { .noop $dcDbs(%db,nick,$3).setValue | hadd $1 %pre $+ nick $3 }
+    if ($4 != $null) { .noop $dcDbs(%db,anick,$4).setValue | hadd $1 %pre $+ anick $4 }
+    if ($5 != $null) { .noop $dcDbs(%db,emailaddr,$5).setValue | hadd $1 %pre $+ emailaddr $5 }
+    if ($6 != $null) { .noop $dcDbs(%db,fullname,$6).setValue | hadd $1 %pre $+ fullname $6 }
     return 1
   }
   else {
@@ -383,8 +417,8 @@ alias -l dcConnect.prepareNewPerform {
     .noop $dcError($hget($1,error.obj),Netzwerk wurde nicht gesetzt).add
     return 0
   } 
-  .noop $dcDbs($hget($1,dbhash.local),perform).setSection
-  .noop $dcDbs($hget($1,dbhash.local)).deleteUserSection
+  .noop $dcDbs($hget($1,dbhash.local),section,perform).set
+  .noop $dcDbs($hget($1,dbhash.local)).deleteSection
   hadd $1 perform.line 0
   return 1
 }
@@ -401,16 +435,69 @@ alias -l dcConnect.addPerformLine {
     .noop $dcError($hget($1,error.obj),Perform Zeile enthält unzulässige Leerzeichen).add
   }
   if ($dcError($hget($1,error.obj)).count > 0) {
-    .noop $dcDbs($hget($1,dbhash.local)).deleteUserSection
+    .noop $dcDbs($hget($1,dbhash.local)).deleteSection
     return 0
   }
   else {
     if ($2 != $null) {
       hinc $1 perform.line
-      .noop $dcDbs($hget($1,dbhash.local),n $+ $hget($1,perform.line),$2).setUserValue
+      .noop $dcDbs($hget($1,dbhash.local),n $+ $hget($1,perform.line),$2).setValue
     }
     return 1
   }  
+}
+
+/*
+* Überprüft die Konfiguration
+*
+* @param $1 dcConnect objekt
+* @param $2 SSL
+* @param $3 mircident?
+* @return 1 oder 0
+*/
+alias -l dcConnect.checkConfig {
+  .noop $dcError($hget($1,error.obj)).clear
+  if ($2 !isnum 0-1) {
+    .noop $dcError($hget($1,error.obj),Wert für SSL ungültig).add
+  }
+  else {
+    if (!$sslready) {
+      .noop $dcError($hget($1,error.obj),OpenSSL DLLs nicht geladen).add
+    }
+  }
+  if ($3 !isnum 0-1) {
+    .noop $dcError($hget($1,error.obj),Wert für MircIdent ungültig).add
+  }
+
+  if ($dcError($hget($1,error.obj)).count > 0) {
+    return 0
+  }
+  else {
+    return 1
+  }
+}
+
+/*
+* Speichert die Konfiguration
+*
+* @param $1 dcConnect objekt
+* @param $2 SSL
+* @param $3 mircident?
+* @return 1 oder 0
+*/
+alias -l dcConnect.saveConfig {
+  if ($dcConnect($1,$2,$3).checkConfig) {
+    .noop $dcDbs($hget($1,dbhash),section,config).set
+    .noop $dcDbs($hget($1,dbhash),ssl,$2).setValue
+    .noop $dcDbs($hget($1,dbhash),mirc_ident,$3).setValue
+    hadd $1 ssl $2
+    hadd $1 mirc_ident $3
+    .noop $dcConnect($1).getDefaultIdent
+    return 1    
+  }
+  else {
+    return 0
+  }
 }
 
 /*
@@ -526,8 +613,8 @@ alias -l dcConnectDialog.init {
 
   .noop $dcDialog($1,435,540).createBasePanel
   .noop $dcConnectDialog($1).createControls
-  .noop $dcConnectDialog($1).createNetworkControls
   .noop $dcConnectDialog($1).fillNetworkList
+  .noop $dcConnectDialog($1).createNetworkControls
   .noop $dcConnectDialog($1).setNetworkControls
   .noop $dcConnectDialog($1).loadServers
 
@@ -638,14 +725,14 @@ alias -l dcConnectDialog.createNetworkControls {
   xdid -t $hget($1,dialog.name) 124 Name
   xdid -c $hget($1,dialog.name) 3 13 edit 5 195 225 20 autohs tabstop tabstop
 
-  xdid -c $hget($1,dialog.name) 3 14 check 5 225 225 20 tabstop
-  xdid -t $hget($1,dialog.name) 14 als Standard
+  ;xdid -c $hget($1,dialog.name) 3 14 check 5 225 225 20 tabstop
+  ;xdid -t $hget($1,dialog.name) 14 als Standard
 
-  xdid -c $hget($1,dialog.name) 3 125 text 5 255 200 20
+  xdid -c $hget($1,dialog.name) 3 125 text 5 225 200 20
   xdid -t $hget($1,dialog.name) 125 Netzwerk Perform
   xdid -f $hget($1,dialog.name) 125 + default 10 Verdana
 
-  xdid -c $hget($1,dialog.name) 3 15 edit 5 275 225 150 autovs return multi tabstop
+  xdid -c $hget($1,dialog.name) 3 15 edit 5 245 225 180 autovs return multi tabstop
 
   xdid -c $hget($1,dialog.name) 3 80 button 62 435 100 20 tabstop
   xdid -t $hget($1,dialog.name) 80 Speichern
@@ -732,6 +819,7 @@ alias -l dcConnectDialog.fillNetworkList {
   }
   .noop $dcNetworkList(%networkList).destroy
   xdid -c $hget($1,dialog.name) 2 1
+  .noop $dcConnect($hget($1,connect.obj),$xdid($hget($1,dialog.name),2).seltext).setNetwork
   return 1
 }
 
@@ -909,17 +997,12 @@ alias -l dcConnectDialog.delServer {
 * @return 1 oder 0
 */
 alias -l dcConnectDialog.saveNetworkData {
-  if (!$dcConnect($hget($1,connect.obj),$xdid($hget($1,dialog.name),14).state,$xdid($hget($1,dialog.name),10).text,$xdid($hget($1,dialog.name),11).text, $&
+  if (!$dcConnect($hget($1,connect.obj),0,$xdid($hget($1,dialog.name),10).text,$xdid($hget($1,dialog.name),11).text, $&
     $xdid($hget($1,dialog.name),12).text,$xdid($hget($1,dialog.name),13).text).saveIdent) {
     .noop $dcError($dcConnect($hget($1,connect.obj)).getErrorObject,$dialog($hget($1,dialog.name)).hwnd).showDialog
     return 0
   }
-  if ($xdid($hget($1,dialog.name),14).state == 1) {
-    xdid -E $hget($1,dialog.name) 10 $xdid($hget($1,dialog.name),10).text
-    xdid -E $hget($1,dialog.name) 11 $xdid($hget($1,dialog.name),11).text
-    xdid -E $hget($1,dialog.name) 12 $xdid($hget($1,dialog.name),12).text
-    xdid -E $hget($1,dialog.name) 13 $xdid($hget($1,dialog.name),13).text
-  }
+
   .noop $dcConnect($hget($1,connect.obj)).prepareNewPerform
 
   var %i 1
@@ -1219,12 +1302,12 @@ alias -l dcConnectBnc.setBouncer {
 alias -l dcConnectBnc.getBouncerData {
   var %list $dcDbsList($hget($1,dbhash),user,$hget($1,current.bnc))
   if (%list) {
-    .noop $dcDbs($hget($1,dbhash),$hget($1,current.bnc)).setSection
-    hadd $1 type $dcDbs($hget($1,dbhash),type).getUserValue
-    hadd $1 address $dcDbs($hget($1,dbhash),address).getUserValue
-    hadd $1 port $dcDbs($hget($1,dbhash),port).getUserValue
-    hadd $1 user $dcDbs($hget($1,dbhash),user).getUserValue
-    hadd $1 pwd $decryptValue($dcDbs($hget($1,dbhash),pwd).getUserValue)
+    .noop $dcDbs($hget($1,dbhash),section,$hget($1,current.bnc)).set
+    hadd $1 type $dcDbs($hget($1,dbhash),type).getValue
+    hadd $1 address $dcDbs($hget($1,dbhash),address).getValue
+    hadd $1 port $dcDbs($hget($1,dbhash),port).getValue
+    hadd $1 user $dcDbs($hget($1,dbhash),user).getValue
+    hadd $1 pwd $dcDbs($hget($1,dbhash),pwd).getEncryptedValue
     hadd $1 mode edit
     .noop $dcDbsList(%list).destroy
     return 1
@@ -1293,7 +1376,7 @@ alias -l dcConnectBnc.clearData {
 */
 alias -l dcConnectBnc.delBnc {
   if ($hget($1,current.bnc)) {
-    .noop $dcDbs($hget($1,dbhash),$hget($1,current.bnc)).deleteUserSection
+    .noop $dcDbs($hget($1,dbhash),$hget($1,current.bnc)).deleteSection
     .noop $dcConnectBnc($1).clearData
     return 1
   }
@@ -1381,16 +1464,16 @@ alias -l dcConnectBnc.checkBncData {
 */
 alias -l dcConnectBnc.saveBncData {
   if ($dcConnectBnc($1,$2,$3,$4,$5,$6,$7).checkBncData) {
-    .noop $dcDbs($hget($1,dbhash),$2).setSection
+    .noop $dcDbs($hget($1,dbhash),section,$2).set
     if ($hget($1,mode) == edit && $hget($1,current.bnc) != $2) {
       var %line $read($dcDbs($hget($1,dbhash),config_user).get,w,* $+ $chr(91) $+ $hget($1,current.bnc) $+ $chr(93) $+ *,0)
       .write -l $+ $readn $qt($dcDbs($hget($1,dbhash),config_user).get) $chr(91) $+ $2 $+ $chr(93)
     } 
-    .noop $dcDbs($hget($1,dbhash),type,$3).setUserValue
-    .noop $dcDbs($hget($1,dbhash),address,$4).setUserValue
-    .noop $dcDbs($hget($1,dbhash),port,$5).setUserValue
-    .noop $dcDbs($hget($1,dbhash),user,$6).setUserValue
-    .noop $dcDbs($hget($1,dbhash),pwd,$encryptValue($7)).setUserValue
+    .noop $dcDbs($hget($1,dbhash),type,$3).setValue
+    .noop $dcDbs($hget($1,dbhash),address,$4).setValue
+    .noop $dcDbs($hget($1,dbhash),port,$5).setValue
+    .noop $dcDbs($hget($1,dbhash),user,$6).setValue
+    .noop $dcDbs($hget($1,dbhash),pwd,$7).setEncryptedValue
 
     hadd $1 current.bnc $2
     hadd $1 type $3
@@ -2038,7 +2121,7 @@ alias -l dcConnectAc.init {
     hadd %db createDB 0
   }
   hadd $1 dbhash %db
-  .noop $dcDbs(%db,autoconnect).setSection
+  .noop $dcDbs(%db,section,autoconnect).set
   hadd $1 error.obj $dcError
   hadd $1 aclist $dcConnectAcList(%db)
 
@@ -2070,7 +2153,7 @@ alias -l dcConnectAc.destroy {
 * @return 1
 */
 alias -l dcConnectAc.clearList {
-  .noop $dcDbs($hget($1,dbhash)).deleteUserSection
+  .noop $dcDbs($hget($1,dbhash)).deleteSection
   return 1
 }
 
@@ -2087,7 +2170,7 @@ alias -l dcConnectAc.addServer {
     var %server $dcServer($3)
     var %group $dcServer(%server,group).get
     .noop $dcServer(%server).destroy
-    .noop $dcDbs($hget($1,dbhash),SERVER_ $+ %group,$2 $+ $chr(44) $+ $3).setUserValue
+    .noop $dcDbs($hget($1,dbhash),SERVER_ $+ %group,$2 $+ $chr(44) $+ $3).setValue
     return 1
   }
   else {
@@ -2106,7 +2189,7 @@ alias -l dcConnectAc.addServer {
 */
 alias -l dcConnectAc.addBouncer {
   if (1 != $null || $2 != $null || $3 != $null) {
-    .noop $dcDbs($hget($1,dbhash),BOUNCER_ $+ $3,$2).setUserValue
+    .noop $dcDbs($hget($1,dbhash),BOUNCER_ $+ $3,$2).setValue
     return 1
   }
   else {
@@ -2631,6 +2714,251 @@ alias dc.connectAutoconnect.events {
   }
 }
 
+/*
+* Class Alias
+* var %var $dcConnectBncDialog
+*
+* @param $1 dialog name
+*/
+alias dcConnectConfigDialog {
+  var %this = dcConnectConfigDialog           | ; Name of Object (Alias name)
+  var %base = dcDialog        | ; Name of BaseClass, $null for none  
+
+  /*
+  * Start of data parsing
+  * Do not edit
+  */
+
+  if (!$prop) { goto init }
+  if (!$hget($1) && $prop != init) { echo -a * Error: Object not initialized %this | halt }
+  ;if (if %base == $null && $hget($1,BASE) != %this) { echo -a * Error: Object is not from %this | halt }
+  if (if %base != $null && $hget($1,INIT) != %this) { echo -a * Error: Object is not from %this | halt }
+  if ($isalias($+(%this,.,$prop,.PRIVATE))) { echo -a * ERROR: Unable to access Method $qt(%prop) | halt }
+  goto $prop
+  halt
+
+  :error
+  if (goto isin $error && %base != $null) {
+    .reseterror
+    set % [ $+ [ %base ] ] $prop $1-
+    return $ [ $+ [ %base ] ]
+  }
+  else {
+    echo -a $iif($error,$v1,Unknown error) in Class: %this
+    .reseterror
+    return 0
+  }  
+  /*
+  * Your Class methods
+  * Start editing here
+  */
+
+  :init
+  var %x $dcDialog(%this,%base)
+  return $dcConnectConfigDialog.init(%x,$1)
+
+  :destroy
+  return $dcConnectConfigDialog.destroy($1)
+
+  :createControls
+  return $dcConnectConfigDialog.createControls($1)
+
+  :setControls
+  return $dcConnectConfigDialog.setControls($1)
+
+  :switchIdent
+  return $dcConnectConfigDialog.switchIdent($1)
+
+  :saveIdent
+  return $dcConnectConfigDialog.saveIdent($1)
+
+  :saveConfig
+  return $dcConnectConfigDialog.saveConfig($1)
+}
+
+/*
+* Initialisiert das dcConnectConfigDialog objekt
+*
+* @param $1 dcConnectConfigDialog objekt
+* @param $2 dialog name
+* @param $3 dbhash oder $null
+* @return dcConnectConfigDialog objekt
+*/
+alias -l dcConnectConfigDialog.init {
+  hadd $1 connect.obj $dcConnect($3)
+  if ($2 != $null) { hadd $1 dialog.name $2 }
+  else { hadd $1 dialog.name dcConnectConf }
+
+  .noop $dcDialog($1,435,540).createBasePanel
+  .noop $dcConnectConfigDialog($1).createControls
+  .noop $dcConnectConfigDialog($1).setControls
+  .noop $dcConnectConfigDialog($1).switchIdent
+
+  return $1
+}
+
+/*
+* löscht ein dcConnectConfigDialog Objekt
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1
+*/
+alias -l dcConnectConfigDialog.destroy {
+  .noop $dcConnect($hget($1,connect.obj)).destroy
+  .noop $dcBase($1).destroy
+  return 1
+}
+
+/*
+* Erzeugt die BedienElemente
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1
+*/
+alias -l dcConnectConfigDialog.createControls {
+  xdid -c $hget($1,dialog.name) 1 100 text 0 0 200 25
+  xdid -t $hget($1,dialog.name) 100 Server Verwaltung
+  xdid -f $hget($1,dialog.name) 100 + default 14 Arial
+
+  xdid -c $hget($1,dialog.name) 1 101 text 5 40 150 20
+  xdid -t $hget($1,dialog.name) 101 Basis Einstellungen
+  xdid -f $hget($1,dialog.name) 101 + default 10 Verdana
+
+  xdid -c $hget($1,dialog.name) 1 2 check 10 65 200 20
+  xdid -t $hget($1,dialog.name) 2 SSL bevorzugen
+
+  xdid -c $hget($1,dialog.name) 1 3 check 10 85 200 20
+  xdid -t $hget($1,dialog.name) 3 Mirc Ident Informationen verwenden
+
+  xdid -c $hget($1,dialog.name) 1 80 button 10 110 100 20
+  xdid -t $hget($1,dialog.name) 80 Speichern
+
+  xdid -c $hget($1,dialog.name) 1 102 text 5 140 150 20
+  xdid -t $hget($1,dialog.name) 102 Standard Ident
+  xdid -f $hget($1,dialog.name) 102 + default 10 Verdana
+
+  xdid -c $hget($1,dialog.name) 1 104 text 5 165 100 20
+  xdid -t $hget($1,dialog.name) 104 Nick
+  xdid -c $hget($1,dialog.name) 1 4 edit 5 185 225 20 autohs tabstop tabstop
+
+  xdid -c $hget($1,dialog.name) 1 105 text 5 215 100 20
+  xdid -t $hget($1,dialog.name) 105 Alternativer Nick
+  xdid -c $hget($1,dialog.name) 1 5 edit 5 235 225 20 autohs tabstop tabstop
+
+  xdid -c $hget($1,dialog.name) 1 106 text 5 265 100 20
+  xdid -t $hget($1,dialog.name) 106 E-Mail
+  xdid -c $hget($1,dialog.name) 1 6 edit 5 285 225 20 autohs tabstop tabstop
+
+  xdid -c $hget($1,dialog.name) 1 107 text 5 315 100 20
+  xdid -t $hget($1,dialog.name) 107 Name
+  xdid -c $hget($1,dialog.name) 1 7 edit 5 335 225 20 autohs tabstop tabstop
+
+  xdid -c $hget($1,dialog.name) 1 81 button 10 360 100 20 tabstop
+  xdid -t $hget($1,dialog.name) 81 Speichern
+
+  return 1
+}
+
+/*
+* Setzt die BedienElemente
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1
+*/
+alias -l dcConnectConfigDialog.setControls {
+  if ($dcConnect($hget($1,connect.obj),ssl).get == 1) { xdid -c $hget($1,dialog.name) 2 }
+  if ($dcConnect($hget($1,connect.obj),mirc_ident).get == 1) { xdid -c $hget($1,dialog.name) 3 }
+
+
+  var %ident $dcConnect($hget($1,connect.obj),0,1).getIdent
+  xdid -a $hget($1,dialog.name) 4 $gettok(%ident,1,32)
+  xdid -a $hget($1,dialog.name) 5 $gettok(%ident,2,32)
+  xdid -a $hget($1,dialog.name) 6 $gettok(%ident,3,32)
+  xdid -a $hget($1,dialog.name) 7 $gettok(%ident,4-,32)
+
+  return 1
+}
+
+/*
+* Aktiviert oder deaktiviert die Ident Elemente
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1
+*/
+alias -l dcConnectConfigDialog.switchIdent {
+  if ($xdid($hget($1,dialog.name),3).state == 0) {
+    .noop $dcDialog($1,4-7,81).enableControls
+  }
+  else {
+    .noop $dcDialog($1,4-7,81).disableControls
+  }
+}
+
+/*
+* Speichert die Ident Informationen
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1 oder 0
+*/
+alias -l dcConnectConfigDialog.saveConfig {
+  if ($dcConnect($hget($1,connect.obj),$xdid($hget($1,dialog.name),2).state,$xdid($hget($1,dialog.name),3).state).saveConfig) {
+    .noop $dcx(MsgBox,ok exclamation modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) OK $chr(9) Konfiguration erfolgreich gespeichert)
+  }
+  else {
+    .noop $dcx(MsgBox,ok error modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) Fehler $chr(9) Konfiguration speichern fehlgeschlagen)
+  }
+}
+/*
+* Speichert die Ident Informationen
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1 oder 0
+*/
+alias -l dcConnectConfigDialog.saveIdent {
+  if (!$dcConnect($hget($1,connect.obj),1,$xdid($hget($1,dialog.name),4).text,$xdid($hget($1,dialog.name),5).text, $&
+    $xdid($hget($1,dialog.name),6).text,$xdid($hget($1,dialog.name),7).text).saveIdent) {
+    .noop $dcError($dcConnect($hget($1,connect.obj)).getErrorObject,$dialog($hget($1,dialog.name)).hwnd).showDialog
+    return 0
+  }
+  .noop $dcx(MsgBox,ok exclamation modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) OK $chr(9) Ident erfolgreich gespeichert)
+  return 1
+}
+
+/*
+* Wird durch den Config-Dialog aufgerufen, initalisiert den Dialog
+*
+* @param $1 dcConfig objekt
+*/
+alias dc.connectConfig.createPanel {
+  set %dc.connect.config.dialog.obj $dcConnectConfigDialog($dcConfig($1,dialog.name).get,$dcConfig($1,currentPanel.dbhash).get)
+
+}
+
+/*
+* Wird durch den Config-Dialog aufgerufen, zerstört den Dialog
+*/
+alias dc.connectConfig.destroyPanel {
+  .noop $dcConnectConfigDialog(%dc.connect.config.dialog.obj).destroy
+  unset %dc.connect.config.* 
+}
+
+/*
+* Verwaltet Dialog-Ereignisse wie Mausklicks, Tastatureingaben, ...
+*
+* @param $1 DialogName
+* @param $2 Ereignis
+* @param $3 Betroffene ID
+* @param $4 sonstiges
+*/
+alias dc.connectConfig.events { 
+  if ($2 == sclick) {
+    if ($3 == 3) { .noop $dcConnectConfigDialog(%dc.connect.config.dialog.obj).switchIdent }
+    if ($3 == 80) { .noop $dcConnectConfigDialog(%dc.connect.config.dialog.obj).saveConfig }
+    if ($3 == 81) { .noop $dcConnectConfigDialog(%dc.connect.config.dialog.obj).saveIdent }
+  }
+}
+
+
 alias dc.connect.autoStart {
   var %ac.obj $dcConnectAC
   var %bnc.obj $dcConnectBnc
@@ -2676,17 +3004,17 @@ alias dc.connect.perform {
   }
 }
 
-alias dc.connect.addIdent {
+alias dc.connect.server {
   var %param $hget(alias_server,param)
+  var %dc.connect $dcConnect
+  if ($chr(45) isin $gettok(%param,1,32)) { var %server $gettok(%param,2,32) | var %server.pos 2 }
+  else { var %server $gettok(%param,1,32) | var %server.pos 1 }
+  var %data $dcServer(%server)
   if (!$istok(%param,-i,32)) {
-    if ($chr(45) isin $gettok(%param,1,32)) { var %server $gettok(%param,2,32) }
-    else { var %server $gettok(%param,1,32) }
-    if ($server(0,%server) == 0) { var %group $server(%server).group }
-    else { var %group %server }
-    .var %dc.connect $dcConnect
+    if ($server(0,%server) == 0) { var %group $dcServer(%data,group).get }
+    else { var %group %server } 
     .noop $dcConnect(%dc.connect,%group).setNetwork
-    var %ident $dcConnect(%dc.connect,1,1).getIdent
-    .noop $dcConnect(%dc.connect).destroy
+    var %ident $dcConnect(%dc.connect,1,1).getIdent    
     var %pos $findtok(%param,-j,1,32)
     if (%pos) {
       hadd -m alias_server param $instok(%param,-i %ident,%pos,32)
@@ -2694,7 +3022,21 @@ alias dc.connect.addIdent {
     else {
       hadd -m alias_server param $addtok(%param,-i %ident,32)
     }
+    var %param $hget(alias_server,param)
   }
+  if ($dcConnect(%dc.connect,ssl).get) {
+    if ($dcServer(%data,ssl-ports).get) {
+      inc %server.pos
+      if ($gettok(%param,%server.pos,32) isnum) {
+        hadd -m alias_server param $puttok(%param,$chr(43) $+ $dcServer(%data,ssl-ports).get,%server.pos,32)
+      }
+      else {
+        hadd -m alias_server param $instok(%param,$chr(43) $+ $dcServer(%data,ssl-ports).get,%server.pos,32)
+      }
+    }
+  }
+  .noop $dcServer(%data).destroy
+  .noop $dcConnect(%dc.connect).destroy
 }
 
 alias dc.connect.load { }

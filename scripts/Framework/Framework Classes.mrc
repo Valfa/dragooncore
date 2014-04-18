@@ -38,6 +38,9 @@ alias dcBase {
   :callprop
   var %prop $gettok(% [ $+ [ %this ] ],1,32)
   .tokenize 32 $gettok(% [ $+ [ %this ] ],2-,32)
+  if ($istok($hget($1,limit_get),%prop,44) || $istok($hget($1,limit_set),%prop,44)) {
+    return $hget($1,%prop)
+  }
   .unset % [ $+ [ %this ] ]
   goto %prop
   halt
@@ -100,7 +103,7 @@ alias -l dcBase.destroy {
 * @return Wert des Items oder $null
 */
 alias -l dcBase.get {
-  if ($2 != $null && ($istok($hget($1,limit_vars),$2,44) || $istok($hget($1,limit_get),$2,44))) {
+  if ($2 != $null && ($istok($hget($1,limit_set),$2,44) || $istok($hget($1,limit_get),$2,44))) {
     return $hget($1,$2)
   }
   else {
@@ -117,9 +120,9 @@ alias -l dcBase.get {
 * @return 1 oder 0
 */
 alias -l dcBase.set {
-  if ($2 != $null && ($istok($hget($1,limit_vars),$2,44) || $istok($hget($1,limit_get),$2,44))) {
-   hadd $1 $2 $3
-   return 1
+  if ($2 != $null && $istok($hget($1,limit_set),$2,44)) {
+    hadd $1 $2 $3
+    return 1
   }
   else {
     return 0
@@ -159,6 +162,9 @@ alias dcList {
   :callprop
   var %prop $gettok(% [ $+ [ %this ] ],1,32)
   .tokenize 32 $gettok(% [ $+ [ %this ] ],2-,32)
+  if ($istok($hget($1,limit_get),%prop,44) || $istok($hget($1,limit_set),%prop,44)) {
+    return $hget($1,%prop)
+  }
   .unset % [ $+ [ %this ] ]
   goto %prop
   halt
@@ -612,6 +618,7 @@ alias -l dcServer.init {
     hadd $1 exists 0
     hadd $1 mode new
   }
+  hadd $1 limit_get address,desc,group,pass,ports,ssl-ports
   hadd $1 error.obj $dcError
   return $1
 }
@@ -1019,6 +1026,9 @@ alias dcDialog {
   :callprop
   var %prop $gettok(% [ $+ [ %this ] ],1,32)
   .tokenize 32 $gettok(% [ $+ [ %this ] ],2-,32)
+  if ($istok($hget($1,limit_get),%prop,44) || $istok($hget($1,limit_set),%prop,44)) {
+    return $hget($1,%prop)
+  }
   .unset % [ $+ [ %this ] ]
   goto %prop
   halt
@@ -1029,7 +1039,7 @@ alias dcDialog {
   */
 
   :init
-  var %x $dcBase.init($1,$2).init
+  var %x $dcBase.init($1,$2)
   return $dcDialog.init(%x)
 
   :exists
@@ -1072,12 +1082,11 @@ alias dcDialog {
 * @return dc dialog objekt
 */
 alias -l dcDialog.init {
-  if (%dc.fw.dbhash == $null) { set %dc.fw.dbhash $dbs(framework) }
-  .noop $dbs(%dc.fw.dbhash,config_dialog).setSection
-  hadd $1 basePanelID $dbs(%dc.fw.dbhash,basePanelID).getScriptValue
-  hadd $1 panelWidth $dbs(%dc.fw.dbhash,panelWidth).getScriptValue
-  hadd $1 panelHeight $dbs(%dc.fw.dbhash,panelHeight).getScriptValue
-  .noop $dbs(%dc.fw.dbhash).setSection
+  if (%dc.fw.dbhash == $null) { set %dc.fw.dbhash $dcDbs(framework) }
+  .noop $dcDbs(%dc.fw.dbhash,section,config_dialog).set
+  hadd $1 basePanelID $dcDbs(%dc.fw.dbhash,basePanelID).getScriptValue
+  hadd $1 panelWidth $dcDbs(%dc.fw.dbhash,panelWidth).getScriptValue
+  hadd $1 panelHeight $dcDbs(%dc.fw.dbhash,panelHeight).getScriptValue
   return $1
 }
 
