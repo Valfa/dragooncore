@@ -564,8 +564,8 @@ alias -l dcAcroDialog.createControls {
   xdid -t $hget($1,dialog.name) 108 Vorschau
   xdid -c $hget($1,dialog.name) 1 12 richedit 190 290 245 20 tabstop autohs readonly disabled
   xdid -m $hget($1,dialog.name) 12
-
-  xdid -c $hget($1,dialog.name) 1 81 button 190 320 100 20 disabled
+  
+  xdid -c $hget($1,dialog.name) 1 81 button 190 320 100 20 disabled default
   xdid -t $hget($1,dialog.name) 81 Speichern
   return 1
 }
@@ -899,7 +899,9 @@ alias dc.acro.events {
     elseif ($3 == 80) { .noop $dcAcroDialog(%dc.acro.dialog.obj).saveConfig }
     elseif ($3 == 81) { .noop $dcAcroDialog(%dc.acro.dialog.obj).saveAcro }
   }
+  elseif ($2 == keyup && $3 == 10 && $4 == 13) { .noop $dcAcroDialog(%dc.acro.dialog.obj).saveAcro }
   elseif ($2 == keyup && $3 == 10) { .noop $dcAcroDialog(%dc.acro.dialog.obj).setPreview }
+
 }
 
 /*
