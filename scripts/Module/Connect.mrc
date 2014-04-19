@@ -93,6 +93,9 @@ alias dcConnect {
 
   :saveConfig
   return $dcConnect.saveConfig($1,$2,$3)
+
+  :loadDefaults
+  return $dcConnect.loadDefaults($1)
 }
 
 /*
@@ -498,6 +501,32 @@ alias -l dcConnect.saveConfig {
   else {
     return 0
   }
+}
+
+/*
+* Lädt die Standard Config
+*
+* @param $1 dcConnect objekt
+* @return 1
+*/
+alias -l dcConnect.loadDefaults {
+  .noop $dcDbs($hget($1,dbhash),section,config).set
+  hadd $1 ssl $dcDbs($hget($1,dbhash),ssl).getScriptValue
+  hadd $1 mirc_ident $dcDbs($hget($1,dbhash),mirc_ident).getScriptValue
+  if ($hget($1,mirc_ident) == 0) {
+    .noop $dcDbs($hget($1,dbhash),section,ident).set
+    hadd $1 ident.default.nick $dcDbs($hget($1,dbhash),nick).getScriptValue
+    hadd $1 ident.default.anick $dcDbs($hget($1,dbhash),anick).getScriptValue
+    hadd $1 ident.default.fullname $dcDbs($hget($1,dbhash),fullname).getScriptValue
+    hadd $1 ident.default.emailaddr $dcDbs($hget($1,dbhash),emailaddr).getScriptValue
+  }
+  else {
+    hadd $1 ident.default.nick $mnick
+    hadd $1 ident.default.anick $anick
+    hadd $1 ident.default.emailaddr $emailaddr
+    hadd $1 ident.default.fullname $fullname
+  }
+  return 1
 }
 
 /*
@@ -2774,6 +2803,9 @@ alias dcConnectConfigDialog {
 
   :saveConfig
   return $dcConnectConfigDialog.saveConfig($1)
+
+  :loadDefaults
+  return $dcConnectConfigDialog.loadDefaults($1)
 }
 
 /*
@@ -2908,6 +2940,7 @@ alias -l dcConnectConfigDialog.saveConfig {
     .noop $dcx(MsgBox,ok error modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) Fehler $chr(9) Konfiguration speichern fehlgeschlagen)
   }
 }
+
 /*
 * Speichert die Ident Informationen
 *
@@ -2922,6 +2955,20 @@ alias -l dcConnectConfigDialog.saveIdent {
   }
   .noop $dcx(MsgBox,ok exclamation modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) OK $chr(9) Ident erfolgreich gespeichert)
   return 1
+}
+
+/*
+* Setzt die BedienElemente auf standard
+*
+* @param $1 dcConnectConfigDialog objekt
+* @return 1 
+*/
+alias -l dcConnectConfigDialog.loadDefaults {
+  .noop $dcDialog($1,2-3).uncheckControls
+  .noop $dcDialog($1,4-7).clearControls
+  if ($dcConnect($hget($1,connect.obj)).loadDefaults) {
+    .noop $dcConnectConfigDialog($1).setControls
+  }
 }
 
 /*
@@ -2940,6 +2987,13 @@ alias dc.connectConfig.createPanel {
 alias dc.connectConfig.destroyPanel {
   .noop $dcConnectConfigDialog(%dc.connect.config.dialog.obj).destroy
   unset %dc.connect.config.* 
+}
+
+/*
+* Lädt die Standard Einstellung
+*/
+alias dc.connectConfig.loadDefaults {
+  .noop $dcConnectConfigDialog(%dc.connect.config.dialog.obj).loadDefaults
 }
 
 /*
