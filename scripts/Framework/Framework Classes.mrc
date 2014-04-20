@@ -1074,6 +1074,12 @@ alias dcDialog {
 
   :clearControls
   return $dcDialog.multiControl($1,-r,$2-)
+  
+  :get
+  return $dcBase.get($1,$2)
+
+  :set
+  return $dcBase.set($1,$2,$3)
 }
 
 /*

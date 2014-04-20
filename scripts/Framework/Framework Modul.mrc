@@ -160,7 +160,7 @@ alias -l dcModul.destroy {
 * @return 1 oder 0
 */
 alias -l dcModul.setActiveModul {
-  hadd $1 modul.current $lower($2-)
+  hadd $1 modul.current $replace($lower($2-),$chr(32),_)
   hadd $1 modul.file $mircdirscripts\Module\ $+ $2- $+ .mrc
   if ($exists($hget($1,modul.file))) {
     .noop $dcModul($1).getModulInfo
@@ -322,7 +322,7 @@ alias -l dcModul.unloadModul {
 
     .noop $dcDbs(%db).destroy
     if ($isalias(dc. $+ $hget($1,modul.current) $+ .unload)) { dc. $+ $hget($1,modul.current) $+ .unload }
-    .unload -nrs $nopath($hget($1,modul.file))
+    .unload -nrs $qt($nopath($hget($1,modul.file)))
     .noop $dcDbs(%dc.fw.dbhash,active_moduls,$hget($1,modul.current)).deleteItem
     return 1
   }
@@ -472,7 +472,7 @@ alias -l dcModulDialog.fillList {
   .noop $dcModulList(%list).prepareWhile
   .noop $dcDbs(%dc.fw.dbhash,section,active_moduls).set
   while ($dcModulList(%list).next) {
-    if ($dcDbs(%dc.fw.dbhash,$dcModulList(%list).getValue).getValue == 1) { var %icon 2 }
+    if ($dcDbs(%dc.fw.dbhash,$replace($dcModulList(%list).getValue,$chr(32),_)).getValue == 1) { var %icon 2 }
     else { var %icon 1 }
     xdid -a $hget($1,dialog.name) 2 $+($dcModulList(%list).getPos,$chr(9),+ %icon %icon 0 0 0 $rgb(0,0,255) $rgb(255,0,255) $dcModulList(%list).getValue,$chr(9),$dcModulList(%list).getValue)
   }
@@ -505,7 +505,7 @@ alias -l dcModulDialog.getModulInfo {
 alias -l dcModulDialog.toggleModul {
   .noop $dcDbs(%dc.fw.dbhash,section,active_moduls).set
   var %modul $xdid($hget($1,dialog.name),2).seltext
-  if ($dcDbs(%dc.fw.dbhash,$xdid($hget($1,dialog.name),2).seltext).getValue == 1) {
+  if ($dcDbs(%dc.fw.dbhash,$replace($xdid($hget($1,dialog.name),2).seltext,$chr(32),_)).getValue == 1) {
     ;// Modul wird deaktiviert
     if ($dcModul($hget($1,modul.obj)).unloadModul) {
       xdid -j $hget($1,dialog.name) 2 $xdid($hget($1,dialog.name),2).selpath $chr(9) 1 1

@@ -648,9 +648,9 @@ alias -l dcAcroDialog.fillAcroList {
 */
 alias -l dcAcroDialog.changeToolbar {
   if ($hget($1,active.list) == script) {
+    xdid -t $hget($1,dialog.name) 75 1 +d
     xdid -t $hget($1,dialog.name) 75 2 +d
     xdid -t $hget($1,dialog.name) 75 3 +d
-    xdid -t $hget($1,dialog.name) 75 4 +d
     xdid -b $hget($1,dialog.name) 81
   }  
   elseif ($hget($1,active.list) == user) {
@@ -821,7 +821,7 @@ alias -l dcAcroDialog.delAcro {
     .noop $dcx(MsgBox,ok exclamation modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) OK $chr(9) Acro erfolgreich gelöscht)
   }
   else {
-    .noop $dcx(MsgBox,ok error modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) Fehler $chr(9) Acro konnte nicht gelöscht werden )
+    .noop $dcx(MsgBox,ok error modal owner $dialog($hget($1,dialog.name)).hwnd $chr(9) Fehler $chr(9) Acro konnte nicht gelöscht werden)
   }
 }
 

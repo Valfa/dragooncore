@@ -103,7 +103,7 @@ on *:connect:{
   var %list $dcDbs(%dc.fw.dbhash,onRemote,onConnect).getValue
   var %i 1
   while (%i <= $numtok(%list,44)) {
-    $gettok(%list,%i,44)
+    $gettok(%list,%i,44) $network
     inc %i
   }
 }
@@ -122,5 +122,23 @@ on *:Input:?#: {
     .say $hget(input_ $+ $active,text)
     hfree input_ $+ $active
     haltdef
+  }
+}
+
+on *:Nick: {
+  if ($nick == $me) {
+    var %list $dcDbs(%dc.fw.dbhash,onRemote,onNick).getValue
+    if (%list) {
+      hmake nick_ $+ $network 100
+      hadd nick_ $+ $network nick $nick
+      hadd nick_ $+ $network newnick $newnick
+      hadd nick_ $+ $network network $network
+      var %i 1
+      while (%i <= $numtok(%list,44)) {
+        $gettok(%list,%i,44) nick_ $+ $network
+        inc %i
+      }
+      hfree nick_ $+ $network
+    }
   }
 }

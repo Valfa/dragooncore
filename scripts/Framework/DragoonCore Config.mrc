@@ -173,7 +173,7 @@ alias -l dcConfig.createControls {
   xdialog -c $hget($1,dialog.name) 1031 radio 100 75 95 20 pushlike center
   xdid -t $hget($1,dialog.name) 1031 Module  
 
-  xdialog -c $hget($1,dialog.name) 1010 toolbar 5 100 200 30 flat noauto  tooltips list
+  xdialog -c $hget($1,dialog.name) 1010 toolbar 5 100 200 30 flat noauto tooltips list
   xdid -l $hget($1,dialog.name) 1010 24
   xdid -w $hget($1,dialog.name) 1010 +nh 0 images/ico/page_add.ico
   xdid -w $hget($1,dialog.name) 1010 +nh 0 images/ico/page_gear.ico
@@ -187,7 +187,7 @@ alias -l dcConfig.createControls {
   xdid -a $hget($1,dialog.name) 1010 2 +ld 30 2 $rgb(255,0,0) $chr(9) Standart Konfiguration Laden
   xdid -a $hget($1,dialog.name) 1010 3 +ld 30 3 $rgb(255,0,0) $chr(9) Lokale Konfiguration Löschen
 
-  xdialog -c $hget($1,dialog.name) 1040 text 5 135 200 20 center
+  xdialog -c $hget($1,dialog.name) 1040 text 5 130 200 20 center
   xdid -t $hget($1,dialog.name) 1040 Framework Einstellungen
   xdid -f $hget($1,dialog.name) 1040 + default 10 Verdana
 
