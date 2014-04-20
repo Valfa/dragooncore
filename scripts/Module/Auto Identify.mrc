@@ -935,3 +935,14 @@ alias dc.autoIdentify.onNick {
 
 alias dc.auto_identify.load { }
 alias dc.auto_identify.unload { }
+
+menu channel,status {
+  DragoonCore
+  .Modul Konfiguartion
+  ..Auto Identify:/config_modul autoident
+}
+
+menu menubar {
+  Modul Konfiguartion
+  .Auto Identify:/config_modul autoident
+}

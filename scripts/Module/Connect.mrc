@@ -3095,3 +3095,14 @@ alias dc.connect.server {
 
 alias dc.connect.load { }
 alias dc.connect.unload { }
+
+menu channel,status {
+  DragoonCore
+  .Modul Konfiguartion
+  ..Server Verwaltung:/config_modul connect
+}
+
+menu menubar {
+  Modul Konfiguartion
+  .Server Verwaltung:/config_modul connect
+}

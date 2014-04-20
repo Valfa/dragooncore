@@ -226,9 +226,9 @@ alias -l dcConfig.fillRebar {
     hadd $1 currentSelpath 1
     xdid -c $hget($1,dialog.name) 1101 1
   }
-    if ($hget($1,jumpin.point) > 1) {
-      xdid -m $hget($1,dialog.name) $hget($1,config.rebarID) $hget($1,jumpin.point)
-    }
+  if ($hget($1,jumpin.point) > 1) {
+    xdid -m $hget($1,dialog.name) $hget($1,config.rebarID) $hget($1,jumpin.point)
+  }
   ;hadd $1 currentPanel $gettok($hget(dcConfTree_1101,n1),3,44)
   return 1
 }
@@ -242,42 +242,43 @@ alias -l dcConfig.fillRebar {
 */
 alias -l dcConfig.addRebarEntrys {
   var %list.outer $dcDbsList($hget($1,dbhash),$2)
-  .noop $dcDbsList(%list.outer).prepareWhile
-  while ($dcDbsList(%list.outer).next) {
-    var %list.inner $dcDbsList($hget($1,dbhash),$2,$dcDbsList(%list.outer).getItem)
-    .noop $dcDbsList(%list.inner).prepareWhile
-    while ($dcDbsList(%list.inner).next) {
-      if ($dcDbsList(%list.inner).getItem == n0) {
-        hinc $1 treeviewID
-        xdid -a $hget($1,dialog.name) $hget($1,config.rebarID) 0 + 0 200 0 0 $rgb(0,0,255) $dcDbsList(%list.inner).getValue $chr(9) $hget($1,treeviewID) treeview 0 30 200 440 showsel hasbuttons haslines linesatroot
-        if ($hget($1,jumpin. $+ $2 $+ .name) == $dcDbsList(%list.outer).getItem) {
-          hadd $1 jumpin.point $calc($hget($1,treeviewID) - $hget($1,config.rebarID))
-        }
-      }
-      else {
-        hadd -m dcConfTree_ $+ $hget($1,treeviewID) $dcDbsList(%list.inner).getItem $dcDbsList(%list.inner).getValue
-        var %treeviewPos $mid($dcDbsList(%list.inner).getItem,2)
-        var %treeviewLine $gettok($dcDbsList(%list.inner).getValue,4-,44)
-        xdid -a $hget($1,dialog.name) $hget($1,treeviewID) $+(%treeviewPos,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) %treeviewLine,$chr(9),%treeviewLine)
-        if ($gettok($dcDbsList(%list.inner).getValue,1,44) == local) {
-          var %db_tmp $dcDbs($gettok($dcDbsList(%list.inner).getValue,2,44))
-          var %wc $replace($nopath($hget(%db_tmp,config_user)),.ini,.*.ini)
-          var %i 1
-          var %max $findfile(dcdb/user/Module,%wc,0)
-          while (%i <= %max) {
-            var %net $nopath($findfile(dcdb/user/Module,%wc,%i))
-            var %net $replace($mid(%net,$calc($pos(%net,.,1) + 1)),.ini,)
-            xdid -a $hget($1,dialog.name) $hget($1,treeviewID) $+(%treeviewPos %i,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) %net,$chr(9),%net)
-            inc %i
+  if (%list.outer) {
+    .noop $dcDbsList(%list.outer).prepareWhile
+    while ($dcDbsList(%list.outer).next) {
+      var %list.inner $dcDbsList($hget($1,dbhash),$2,$dcDbsList(%list.outer).getItem)
+      .noop $dcDbsList(%list.inner).prepareWhile
+      while ($dcDbsList(%list.inner).next) {
+        if ($dcDbsList(%list.inner).getItem == n0) {
+          hinc $1 treeviewID
+          xdid -a $hget($1,dialog.name) $hget($1,config.rebarID) 0 + 0 200 0 0 $rgb(0,0,255) $dcDbsList(%list.inner).getValue $chr(9) $hget($1,treeviewID) treeview 0 30 200 440 showsel hasbuttons haslines linesatroot
+          if ($hget($1,jumpin. $+ $2 $+ .name) == $dcDbsList(%list.outer).getItem) {
+            hadd $1 jumpin.point $calc($hget($1,treeviewID) - $hget($1,config.rebarID))
           }
-          .noop $dcDbs(%db_tmp).destroy
+        }
+        else {
+          hadd -m dcConfTree_ $+ $hget($1,treeviewID) $dcDbsList(%list.inner).getItem $dcDbsList(%list.inner).getValue
+          var %treeviewPos $mid($dcDbsList(%list.inner).getItem,2)
+          var %treeviewLine $gettok($dcDbsList(%list.inner).getValue,4-,44)
+          xdid -a $hget($1,dialog.name) $hget($1,treeviewID) $+(%treeviewPos,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) %treeviewLine,$chr(9),%treeviewLine)
+          if ($gettok($dcDbsList(%list.inner).getValue,1,44) == local) {
+            var %db_tmp $dcDbs($gettok($dcDbsList(%list.inner).getValue,2,44))
+            var %wc $replace($nopath($hget(%db_tmp,config_user)),.ini,.*.ini)
+            var %i 1
+            var %max $findfile(dcdb/user/Module,%wc,0)
+            while (%i <= %max) {
+              var %net $nopath($findfile(dcdb/user/Module,%wc,%i))
+              var %net $replace($mid(%net,$calc($pos(%net,.,1) + 1)),.ini,)
+              xdid -a $hget($1,dialog.name) $hget($1,treeviewID) $+(%treeviewPos %i,$chr(9),+ 0 0 0 0 0 $rgb(0,0,255) $rgb(255,0,255) %net,$chr(9),%net)
+              inc %i
+            }
+            .noop $dcDbs(%db_tmp).destroy
+          }
         }
       }
+      .noop $dcDbsList(%list.inner).destroy
     }
-    .noop $dcDbsList(%list.inner).destroy
+    .noop $dcDbsList(%list.outer).destroy
   }
-  .noop $dcDbsList(%list.outer).destroy
-
 }
 
 /*

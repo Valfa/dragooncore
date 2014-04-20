@@ -967,3 +967,14 @@ alias dc.acro.onInput {
 alias dc.acro.load { dc.acro.initGlobalAcroList }
 
 alias dc.acro.unload { .hfree -w acrolist }
+
+menu channel,status {
+  DragoonCore
+  .Modul Konfiguartion
+  ..Acro:/config_modul acro
+}
+
+menu menubar {
+  Modul Konfiguartion
+  .Acro:/config_modul acro
+}

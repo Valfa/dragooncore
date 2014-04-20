@@ -1,3 +1,15 @@
+menu channel,status {
+  DragoonCore
+  .Framework Konfiguration
+  ..Haupt Konfiguration:/config
+  ..-
+  ..Module && Skripte:/config scripts
+  ..Funktionstasten:/config fkey
+  .Modul Konfiguartion
+  ..Haupt Konfiguration:/config_modul
+  ..-
+}
+
 /* Verschlüsselt einen Wert 
 *
 * @param $1- unverschlüsselter Wert
@@ -58,10 +70,6 @@ alias dcCheck {
 
   :port
   return [ $iif($regex(regex,$1-,%regex),1,0) ]
-}
-
-menu channel,status {
-  config:/config
 }
 
 alias server {
