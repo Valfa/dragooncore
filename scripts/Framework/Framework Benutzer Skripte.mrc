@@ -59,9 +59,23 @@ alias dcScriptList {
 alias -l dcScriptList.init {
   var %hash $1
   var %remove $2
-  hadd $1 last $findfile($2,*.mrc;*.ini,0,/hadd %hash n $+ $findfilen $remove($1-,$mircdir $+ %remove))
+  hmake %hash $+ _tmp 100
+  var %last $findfile($2,*.*,0,/hadd %hash $+ _tmp n $+ $findfilen $remove($1-,$mircdir $+ %remove))
   hadd $1 pos 1
   hadd $1 limit_get folder,file,active
+  
+  var %i 1
+  var %j 0
+  while (%i <= %last) {
+    var %tmp $hget(%hash $+ _tmp,n $+ %i)
+    if ($right(%tmp,4) == .mrc || $right(%tmp,4) == .ini) {
+      inc %j
+      hadd %hash n $+ %j %tmp
+    }
+    inc %i
+  }
+  hadd $1 last %j
+  .hfree %hash $+ _tmp
   .noop $dcScriptList.getData($1)
   return $1
 }
@@ -190,13 +204,13 @@ alias -l dcScript.loadScript {
     elseif ($right($2,4) == .ini) {
       if ($read(%file,w,[script])) { .load -rs $qt(%file) }
       else {
-        .noop $dcError($hget($1error.obj),Datei $qt(%file) ist keine gültige Script Datei).add
+        .noop $dcError($hget($1,error.obj),Datei $qt(%file) ist keine gültige Script Datei).add
         return 0
       }
       return 1
     }
     else {
-      .noop $dcError($hget($1error.obj),Datei $qt(%file) besitzt ein ungültiges Format).add
+      .noop $dcError($hget($1,error.obj),Datei $qt(%file) besitzt ein ungültiges Format).add
       return 0
     }
   }
@@ -496,7 +510,7 @@ alias -l dcScriptDialog.toggleScript {
     if ($numtok(%path,32) == 2) {
       var %folder $xdid($hget($1,dialog.name),2,$gettok(%path,1,32)).text $+ \
     }
-  
+
     if ($xdid($hget($1,dialog.name),2,%path).icon == 1) {
       if ($dcScript($hget($1,script.obj),%folder $+ $xdid($hget($1,dialog.name),2).seltext).loadScript) {
         xdid -j $hget($1,dialog.name) 2 %path $chr(9) 2 2
